@@ -832,7 +832,7 @@
     {% if mesa.nombre_personalizado and 'domicilio' in mesa.nombre_personalizado|lower %}
     <script id="wa-data" type="application/json">
     {
-        "telefono": "{{ (config.telefono if config and config.telefono else '573225237665') | replace(' ','') | replace('(','') | replace(')','') | replace('+','') | replace('-','') }}",
+        "telefono": "573225237665",
         "mesa": "{{ mesa.display_name }}",
         "pedidos": [
             {% for p in pedidos %}
