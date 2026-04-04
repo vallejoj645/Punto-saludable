@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mesa {{ mesa.numero }} - Restaurante</title>
+    <title>{{ mesa.display_name }} - Restaurante</title>
     <style>
         * {
             margin: 0;
@@ -51,14 +51,8 @@
         }
 
         @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .alert-success {
@@ -208,15 +202,8 @@
             white-space: nowrap;
         }
 
-        .badge-success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .badge-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
 
         .estado-badge {
             padding: 0.35rem 0.85rem;
@@ -225,25 +212,10 @@
             font-weight: 600;
         }
 
-        .estado-pendiente {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .estado-preparando {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .estado-listo {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .estado-entregado {
-            background: #d1fae5;
-            color: #065f46;
-        }
+        .estado-pendiente  { background: #fee2e2; color: #991b1b; }
+        .estado-preparando { background: #fef3c7; color: #92400e; }
+        .estado-listo      { background: #dbeafe; color: #1e40af; }
+        .estado-entregado  { background: #d1fae5; color: #065f46; }
 
         .pedido-notas {
             background: white;
@@ -254,9 +226,7 @@
             border: 1px solid #e2e8f0;
         }
 
-        .pedido-notas strong {
-            color: #667eea;
-        }
+        .pedido-notas strong { color: #667eea; }
 
         .pedido-actions {
             display: flex;
@@ -278,46 +248,53 @@
             display: inline-block;
         }
 
-        .btn-success {
-            background: #10b981;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #059669;
-        }
-
-        .btn-warning {
-            background: #f59e0b;
-            color: white;
-        }
-
-        .btn-warning:hover {
-            background: #d97706;
-        }
-
-        .btn-info {
-            background: #06b6d4;
-            color: white;
-        }
-
-        .btn-info:hover {
-            background: #0891b2;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5568d3;
-        }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-info { background: #06b6d4; color: white; }
+        .btn-info:hover { background: #0891b2; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
 
         .btn-xs {
             padding: 0.35rem 0.75rem;
             font-size: 0.8rem;
         }
+
+        /* ===== BOTÓN WHATSAPP ===== */
+        .btn-whatsapp {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            padding: 0.85rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            margin-top: 1.25rem;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.35);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-whatsapp:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(37, 211, 102, 0.5);
+            color: white;
+        }
+
+        .btn-whatsapp svg {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+        /* ========================= */
 
         .mesa-summary {
             margin-top: 2rem;
@@ -368,12 +345,9 @@
             color: #64748b;
         }
 
-        .empty-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
+        .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
 
-        /* ESTILOS DEL MODAL */
+        /* MODAL */
         .modal {
             display: none;
             position: fixed;
@@ -411,14 +385,8 @@
         }
 
         @keyframes slideUp {
-            from {
-                transform: translateY(50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
         .modal-header {
@@ -432,10 +400,7 @@
             border-radius: 1rem 1rem 0 0;
         }
 
-        .modal-header h2 {
-            margin: 0;
-            font-size: 1.5rem;
-        }
+        .modal-header h2 { margin: 0; font-size: 1.5rem; }
 
         .close {
             color: white;
@@ -454,13 +419,9 @@
             transition: background 0.3s;
         }
 
-        .close:hover {
-            background: rgba(255,255,255,0.2);
-        }
+        .close:hover { background: rgba(255,255,255,0.2); }
 
-        .modal-body {
-            padding: 1.5rem;
-        }
+        .modal-body { padding: 1.5rem; }
 
         .cuenta-tabla {
             width: 100%;
@@ -468,9 +429,7 @@
             margin: 1rem 0;
         }
 
-        .cuenta-tabla thead {
-            background: #f8fafc;
-        }
+        .cuenta-tabla thead { background: #f8fafc; }
 
         .cuenta-tabla th {
             padding: 0.75rem;
@@ -486,30 +445,12 @@
             border-bottom: 1px solid #e2e8f0;
         }
 
-        .cuenta-tabla tbody tr:hover {
-            background: #f8fafc;
-        }
-
-        .cuenta-tabla .producto-col {
-            font-weight: 500;
-            color: #1e293b;
-        }
-
-        .cuenta-tabla .cantidad-col {
-            text-align: center;
-            color: #64748b;
-        }
-
+        .cuenta-tabla tbody tr:hover { background: #f8fafc; }
+        .cuenta-tabla .producto-col { font-weight: 500; color: #1e293b; }
+        .cuenta-tabla .cantidad-col { text-align: center; color: #64748b; }
         .cuenta-tabla .precio-col,
-        .cuenta-tabla .subtotal-col {
-            text-align: right;
-            font-family: 'Courier New', monospace;
-        }
-
-        .cuenta-tabla .subtotal-col {
-            font-weight: 600;
-            color: #667eea;
-        }
+        .cuenta-tabla .subtotal-col { text-align: right; font-family: 'Courier New', monospace; }
+        .cuenta-tabla .subtotal-col { font-weight: 600; color: #667eea; }
 
         .totales-resumen {
             margin-top: 1.5rem;
@@ -524,14 +465,8 @@
             font-size: 1rem;
         }
 
-        .total-row.pagado {
-            color: #10b981;
-        }
-
-        .total-row.pendiente {
-            color: #f59e0b;
-        }
-
+        .total-row.pagado   { color: #10b981; }
+        .total-row.pendiente { color: #f59e0b; }
         .total-row.final {
             font-size: 1.5rem;
             font-weight: bold;
@@ -541,14 +476,8 @@
             color: #667eea;
         }
 
-        .total-row .label {
-            font-weight: 500;
-        }
-
-        .total-row .value {
-            font-family: 'Courier New', monospace;
-            font-weight: 600;
-        }
+        .total-row .label { font-weight: 500; }
+        .total-row .value { font-family: 'Courier New', monospace; font-weight: 600; }
 
         .btn-ver-cuenta {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -576,62 +505,32 @@
             margin-left: 0.5rem;
         }
 
-        .estado-pago-badge.pagado {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .estado-pago-badge.pendiente {
-            background: #fef3c7;
-            color: #92400e;
-        }
+        .estado-pago-badge.pagado   { background: #d1fae5; color: #065f46; }
+        .estado-pago-badge.pendiente { background: #fef3c7; color: #92400e; }
 
         @media (max-width: 768px) {
-            .pedido-header {
-                flex-direction: column;
-            }
-
-            .pedido-badges {
-                width: 100%;
-            }
-
-            .mesa-summary {
-                grid-template-columns: 1fr;
-            }
-
-            .modal-content {
-                width: 95%;
-                max-height: 90vh;
-            }
-
-            .cuenta-tabla {
-                font-size: 0.85rem;
-            }
-
+            .pedido-header { flex-direction: column; }
+            .pedido-badges { width: 100%; }
+            .mesa-summary { grid-template-columns: 1fr; }
+            .modal-content { width: 95%; max-height: 90vh; }
+            .cuenta-tabla { font-size: 0.85rem; }
             .cuenta-tabla th,
-            .cuenta-tabla td {
-                padding: 0.5rem 0.25rem;
-            }
-
-            .total-row.final {
-                font-size: 1.25rem;
-            }
+            .cuenta-tabla td { padding: 0.5rem 0.25rem; }
+            .total-row.final { font-size: 1.25rem; }
         }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-brand">Ivaluth</div>
+            <div class="nav-brand">Punto-saludable</div>
         </div>
     </nav>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">
-                {{ message }}
-            </div>
+            <div class="alert alert-{{ category }}">{{ message }}</div>
             {% endfor %}
         {% endif %}
     {% endwith %}
@@ -639,7 +538,8 @@
     <div class="container">
         <div class="page-header">
             <a href="{{ url_for('dashboard') }}" class="btn-back">← Volver al Dashboard</a>
-            <h1>Mesa {{ mesa.numero }}</h1>
+            {# Fix: usar display_name para soportar mesas sin número (ej: Domicilios) #}
+            <h1>{{ mesa.display_name }}</h1>
         </div>
 
         <!-- Sesión Activa -->
@@ -700,10 +600,21 @@
                 {% endfor %}
             </div>
             
-            <!-- Botón para ver cuenta detallada -->
+            <!-- Botón cuenta detallada -->
             <button class="btn-ver-cuenta" onclick="abrirModalCuenta('sesion_activa')">
                 💰 Ver Cuenta Detallada
             </button>
+
+            {# ===== BOTÓN WHATSAPP: solo aparece si la mesa es Domicilios ===== #}
+            {% if mesa.nombre_personalizado and 'domicilio' in mesa.nombre_personalizado|lower %}
+            <button class="btn-whatsapp" onclick="enviarPedidoWhatsApp()">
+                <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                Enviar pedido por WhatsApp
+            </button>
+            {% endif %}
+            {# ================================================================= #}
             
             <div class="mesa-summary">
                 <div class="summary-item">
@@ -726,8 +637,6 @@
             </div>
             {% endif %}
         </div>
-        <!-- Agregar este código en tu template ver_mesa.html existente -->
-        <!-- Dentro de la sección de sesión activa, después del total -->
 
         {% if sesion_activa and pedidos %}
         <div style="margin-top: 20px; padding: 20px; background: #e8f5e9; border-radius: 8px; border: 2px solid #27ae60;">
@@ -743,8 +652,8 @@
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <a href="{{ url_for('facturar_sesion', sesion_id=sesion_activa.id) }}" 
-                    class="btn btn-success" 
-                    style="padding: 12px 30px; background: #27ae60; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                       class="btn btn-success" 
+                       style="padding: 12px 30px; background: #27ae60; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
                         ✅ Facturar Sesión
                     </a>
                 </div>
@@ -755,7 +664,6 @@
         </div>
         {% endif %}
 
-        <!-- También puedes agregar un enlace en el menú de navegación -->
         <div style="margin-top: 20px;">
             <a href="{{ url_for('lista_facturas') }}" class="btn" style="padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 5px;">
                 📄 Ver Facturas
@@ -767,7 +675,7 @@
             {% endif %}
         </div>
 
-        <!-- Modal para cuenta detallada de sesión activa -->
+        <!-- Modal cuenta sesión activa -->
         <div id="modal_sesion_activa" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -800,7 +708,6 @@
                             {% endfor %}
                         </tbody>
                     </table>
-
                     <div class="totales-resumen">
                         <div class="total-row pagado">
                             <span class="label">💚 Total Pagado:</span>
@@ -818,6 +725,7 @@
                 </div>
             </div>
         </div>
+
         {% else %}
         <div class="sesion-container">
             <div class="empty-state">
@@ -843,12 +751,9 @@
                     </div>
                     <span class="sesion-badge cerrada">Cerrada</span>
                 </div>
-                
-                <!-- Botón para ver cuenta de sesión anterior -->
                 <button class="btn-ver-cuenta" onclick="abrirModalCuenta('sesion_{{ loop.index0 }}')">
                     💰 Ver Cuenta Detallada
                 </button>
-                
                 <div class="mesa-summary">
                     <div class="summary-item">
                         <strong>{{ item.sesion.pedidos|length }}</strong>
@@ -865,7 +770,6 @@
                 </div>
             </div>
 
-            <!-- Modal para cada sesión anterior -->
             <div id="modal_sesion_{{ loop.index0 }}" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -898,7 +802,6 @@
                                 {% endfor %}
                             </tbody>
                         </table>
-
                         <div class="totales-resumen">
                             <div class="total-row pagado">
                                 <span class="label">💚 Total Pagado:</span>
@@ -925,31 +828,95 @@
         <a href="{{ url_for('nuevo_pedido', mesa_id=mesa.id) }}" class="btn btn-primary">+ Nuevo Pedido</a>
     </div>
 
+    {# ===== DATOS PARA WHATSAPP (inyectados desde Jinja, leídos por JS) ===== #}
+    {% if mesa.nombre_personalizado and 'domicilio' in mesa.nombre_personalizado|lower %}
+    <script id="wa-data" type="application/json">
+    {
+        "telefono": "{{ (config.telefono if config and config.telefono else '573000000000') | replace(' ','') | replace('(','') | replace(')','') | replace('+','') | replace('-','') }}",
+        "mesa": "{{ mesa.display_name }}",
+        "pedidos": [
+            {% for p in pedidos %}
+            {
+                "producto": {{ p.producto | tojson }},
+                "cantidad": {{ p.cantidad }},
+                "precio": {{ p.precio_unitario }},
+                "notas": {{ (p.notas or '') | tojson }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        "total": {{ totales_sesion_activa.total_general }}
+    }
+    </script>
+    {% endif %}
+    {# ======================================================================= #}
+
     <script>
+        // ===== MODAL =====
         function abrirModalCuenta(idSesion) {
-            const modal = document.getElementById('modal_' + idSesion);
-            modal.classList.add('show');
+            document.getElementById('modal_' + idSesion).classList.add('show');
         }
 
         function cerrarModal(idSesion) {
-            const modal = document.getElementById('modal_' + idSesion);
-            modal.classList.remove('show');
+            document.getElementById('modal_' + idSesion).classList.remove('show');
         }
 
-        // Cerrar modal al hacer clic fuera de él
         window.onclick = function(event) {
             if (event.target.classList.contains('modal')) {
                 event.target.classList.remove('show');
             }
         }
 
-        // Cerrar modal con tecla ESC
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
-                const modals = document.querySelectorAll('.modal.show');
-                modals.forEach(modal => modal.classList.remove('show'));
+                document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
             }
         });
+
+        // ===== WHATSAPP =====
+        function enviarPedidoWhatsApp() {
+            const dataEl = document.getElementById('wa-data');
+            if (!dataEl) return;
+
+            const data = JSON.parse(dataEl.textContent);
+
+            if (!data.pedidos || data.pedidos.length === 0) {
+                alert('No hay pedidos para enviar.');
+                return;
+            }
+
+            const ahora = new Date().toLocaleString('es-CO', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            // Construir lista de productos
+            const lineas = data.pedidos.map(p => {
+                const subtotal = (p.cantidad * p.precio).toLocaleString('es-CO', {
+                    minimumFractionDigits: 0, maximumFractionDigits: 0
+                });
+                let linea = `  • ${p.cantidad}x ${p.producto} → $${subtotal}`;
+                if (p.notas && p.notas.trim()) linea += `\n    📝 ${p.notas}`;
+                return linea;
+            }).join('\n');
+
+            const totalFormateado = data.total.toLocaleString('es-CO', {
+                minimumFractionDigits: 0, maximumFractionDigits: 0
+            });
+
+            const mensaje =
+                `🛵 *PEDIDO DOMICILIO*\n` +
+                `📅 ${ahora}\n` +
+                `━━━━━━━━━━━━━━━━━━\n` +
+                `${lineas}\n` +
+                `━━━━━━━━━━━━━━━━━━\n` +
+                `💰 *TOTAL: $${totalFormateado}*\n\n` +
+                `_Enviado desde Ivaluth Manager_`;
+
+            // Limpiar número: dejar solo dígitos
+            const numero = data.telefono.replace(/\D/g, '');
+            const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+            window.open(url, '_blank');
+        }
     </script>
 </body>
 </html>
