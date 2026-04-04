@@ -1246,11 +1246,17 @@ def nuevo_pedido(mesa_id):
         precio_unitario = request.form.get("precio_unitario", 0, type=float)
         notas = request.form.get("notas", "")
         
-        sesion_activa = Sesion.query.filter_by(mesa_id=mesa_id, activa=True).first()
+        # Buscar o crear sesión activa para esta mesa
+        sesion_activa = Sesion.query.filter_by(
+            mesa_id=mesa_id,
+            activa=True
+        ).first()
+        
         if not sesion_activa:
+            # Crear nueva sesión
             sesion_activa = Sesion(mesa_id=mesa_id)
             db.session.add(sesion_activa)
-            db.session.flush()
+            db.session.flush()  # Para obtener el ID
         
         pedido = Pedido(
             mesa_id=mesa_id,
@@ -1261,25 +1267,20 @@ def nuevo_pedido(mesa_id):
             precio_unitario=precio_unitario,
             notas=notas
         )
+        
         db.session.add(pedido)
         db.session.commit()
         
         total = precio_unitario * cantidad
         flash(f'Pedido agregado: {cantidad}x {producto} = ${total:.2f}', 'success')
-        
-        # ← NUEVO: si es Domicilios, redirigir con flag para abrir WhatsApp
-        if mesa.nombre_personalizado and 'domicilio' in mesa.nombre_personalizado.lower():
-            return redirect(url_for('ver_mesa', mesa_id=mesa_id, whatsapp='1'))
-        
         return redirect(url_for('ver_mesa', mesa_id=mesa_id))
     
-    # GET
+    # Obtener todos los items del menú disponibles, agrupados por categoría
     items_menu = ItemMenu.query.filter_by(disponible=True).order_by(
         ItemMenu.categoria_id, ItemMenu.orden
     ).all()
-    config = ConfiguracionRestaurante.query.first()  # ← NUEVO
     
-    return render_template("nuevo_pedido.html", mesa=mesa, items_menu=items_menu, config=config)
+    return render_template("nuevo_pedido.html", mesa=mesa, items_menu=items_menu)
 
 @app.route("/mesa/<int:mesa_id>")
 @login_required
@@ -1346,13 +1347,16 @@ def ver_mesa(mesa_id):
             'total_pendiente': total_pendiente_sesion
         })
     
+    config = ConfiguracionRestaurante.query.first()
+
     return render_template("ver_mesa.html", 
                          mesa=mesa, 
                          pedidos=pedidos_actuales,
                          sesion_activa=sesion_activa,
                          totales_sesion_activa=totales_sesion_activa,
                          sesiones_anteriores=sesiones_con_totales,
-                         current_user=current_user)
+                         current_user=current_user,
+                         config=config)
 
 @app.route("/cocina")
 @login_required
