@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, date
 import os
 import json
 from sqlalchemy.exc import OperationalError
+from sqlalchemy import text
 from dotenv import load_dotenv
 import sys
 import logging
@@ -2461,7 +2462,9 @@ def init_db():
 
         # Migración segura: agregar nombre_personalizado si no existe (SQLite no soporta ALTER COLUMN)
         try:
-            db.engine.execute("ALTER TABLE mesa ADD COLUMN nombre_personalizado VARCHAR(40)")
+            with db.engine.connect() as conn:
+                conn.execute(text("ALTER TABLE mesa ADD COLUMN nombre_personalizado VARCHAR(40)"))
+                conn.commit()
             print("✅ Columna nombre_personalizado agregada a mesa")
         except Exception:
             pass  # Ya existe, ignorar
@@ -3392,7 +3395,9 @@ else:
 
             # Migración segura para nombre_personalizado
             try:
-                db.engine.execute("ALTER TABLE mesa ADD COLUMN nombre_personalizado VARCHAR(40)")
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE mesa ADD COLUMN nombre_personalizado VARCHAR(40)"))
+                    conn.commit()
                 print("✅ Columna nombre_personalizado agregada")
             except Exception:
                 pass  # Ya existe
