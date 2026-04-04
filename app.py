@@ -10,37 +10,6 @@ from dotenv import load_dotenv
 import sys
 import logging
 
-# =========================
-# ZONA HORARIA COLOMBIA
-# =========================
-try:
-    from zoneinfo import ZoneInfo
-    BOGOTA_TZ = ZoneInfo('America/Bogota')
-except ImportError:
-    # Python < 3.9 — fallback con offset fijo UTC-5
-    from datetime import timezone
-    BOGOTA_TZ = timezone(timedelta(hours=-5))
-
-def now_co():
-    """
-    Retorna la hora actual de Colombia (UTC-5) como datetime naive
-    (sin tzinfo) para que sea compatible con las columnas DateTime de la BD.
-    Reemplaza now_co() en toda la app para evitar desfases horarios.
-    """
-    return datetime.now(BOGOTA_TZ).replace(tzinfo=None)
-
-def ts_utc(naive_co_dt):
-    """
-    Convierte un datetime naive almacenado en hora colombiana
-    a Unix timestamp UTC correcto para enviar al frontend JS.
-    JS usa Date.now()/1000 (UTC), así que ambos deben ser UTC para
-    que el cálculo de tiempo transcurrido sea exacto.
-    """
-    if naive_co_dt is None:
-        return None
-    aware = naive_co_dt.replace(tzinfo=BOGOTA_TZ)
-    return aware.timestamp()
-
 # Configurar logging detallado
 logging.basicConfig(
     level=logging.INFO,
@@ -108,14 +77,20 @@ class Usuario(UserMixin, db.Model):
 
 class Mesa(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    numero = db.Column(db.Integer, nullable=Flase, unique=True)
+    numero = db.Column(db.Integer, nullable=True, unique=True)
+    nombre_personalizado = db.Column(db.String(40), nullable=True)
     capacidad = db.Column(db.Integer, default=4)
     activa = db.Column(db.Boolean, default=True)
+
+    @property
+    def display_name(self):
+        """Nombre para mostrar en la UI."""
+        return self.nombre_personalizado if self.nombre_personalizado else f'Mesa {self.numero}'
 
 class Sesion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     mesa_id = db.Column(db.Integer, db.ForeignKey('mesa.id'), nullable=False)
-    fecha_inicio = db.Column(db.DateTime, default=now_co)
+    fecha_inicio = db.Column(db.DateTime, default=datetime.now)
     fecha_fin = db.Column(db.DateTime, nullable=True)
     total = db.Column(db.Float, default=0)  # NUEVO CAMPO para guardar el total
     activa = db.Column(db.Boolean, default=True)
@@ -125,7 +100,7 @@ class Sesion(db.Model):
 
 class Pedido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    fecha = db.Column(db.DateTime, default=now_co)
+    fecha = db.Column(db.DateTime, default=datetime.now)
     mesa_id = db.Column(db.Integer, db.ForeignKey('mesa.id'), nullable=False)
     sesion_id = db.Column(db.Integer, db.ForeignKey('sesion.id'), nullable=True)
     mesero_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
@@ -136,7 +111,7 @@ class Pedido(db.Model):
     estado = db.Column(db.String(20), default='pendiente')  # pendiente, preparando, listo, entregado
     pagado = db.Column(db.Boolean, default=False)
     # Timestamp cuando se actualizó el estado por última vez
-    estado_actualizado = db.Column(db.DateTime, default=now_co)
+    estado_actualizado = db.Column(db.DateTime, default=datetime.now)
     
     mesa = db.relationship('Mesa', backref='pedidos')
     mesero = db.relationship('Usuario', backref='pedidos')
@@ -190,7 +165,7 @@ class Factura(db.Model):
     fecha_vencimiento = db.Column(db.Date, nullable=True)  # Cuándo debe pagar el cliente
     fecha_pago_real = db.Column(db.DateTime, nullable=True)  # Cuándo pagó realmente
     saldo_pendiente = db.Column(db.Float, default=0)  # Si pagó parcialmente
-    fecha_emision = db.Column(db.DateTime, default=now_co)
+    fecha_emision = db.Column(db.DateTime, default=datetime.now)
     
     sesion = db.relationship('Sesion', backref='facturas')
 
@@ -221,7 +196,7 @@ class Presupuesto(db.Model):
     mes = db.Column(db.Integer, nullable=True)  # 1-12 para identificar el mes
     anio = db.Column(db.Integer, nullable=True)  # 2026, 2027, etc.
     activo = db.Column(db.Boolean, default=True)
-    fecha_creacion = db.Column(db.DateTime, default=now_co)
+    fecha_creacion = db.Column(db.DateTime, default=datetime.now)
     
     # Alertas
     alerta_porcentaje = db.Column(db.Integer, default=80)  # Alertar al 80%
@@ -309,7 +284,7 @@ class Proveedor(db.Model):
     direccion = db.Column(db.String(300))
     notas = db.Column(db.Text)
     activo = db.Column(db.Boolean, default=True)
-    fecha_registro = db.Column(db.DateTime, default=now_co)
+    fecha_registro = db.Column(db.DateTime, default=datetime.now)
     
     # Relación: Un proveedor puede tener muchos gastos
     gastos = db.relationship('Gasto', backref='proveedor', lazy='select')
@@ -319,7 +294,7 @@ class Gasto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     # Información básica del gasto (YA EXISTE)
-    fecha = db.Column(db.DateTime, default=now_co, nullable=False)
+    fecha = db.Column(db.DateTime, default=datetime.now, nullable=False)
     concepto = db.Column(db.String(300), nullable=False)
     monto = db.Column(db.Float, nullable=False)
     
@@ -357,7 +332,7 @@ class ConsumoInterno(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('item_menu.id'), nullable=False)
     cantidad = db.Column(db.Integer, default=1)
     costo = db.Column(db.Float, default=0.0)  # Costo para el dueño por unidad
-    fecha = db.Column(db.DateTime, default=now_co)
+    fecha = db.Column(db.DateTime, default=datetime.now)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     notas = db.Column(db.Text)
 
@@ -399,7 +374,7 @@ class Domicilio(db.Model):
     # =================================================================
     # INFORMACIÓN DEL PEDIDO (fechas y tiempos)
     # =================================================================
-    fecha_pedido = db.Column(db.DateTime, default=now_co, nullable=False)
+    fecha_pedido = db.Column(db.DateTime, default=datetime.now, nullable=False)
     fecha_entrega_estimada = db.Column(db.DateTime)                  # Opcional
     fecha_entrega_real = db.Column(db.DateTime)                      # Cuando se entrega
     
@@ -447,7 +422,7 @@ class Domicilio(db.Model):
     # =================================================================
     # TIMESTAMPS (control de tiempos)
     # =================================================================
-    estado_actualizado = db.Column(db.DateTime, default=now_co)
+    estado_actualizado = db.Column(db.DateTime, default=datetime.now)
     
     # =================================================================
     # RELACIONES (conexiones con otras tablas)
@@ -493,7 +468,7 @@ class Domicilio(db.Model):
         Calcula cuánto tiempo ha pasado desde que se tomó el pedido
         Retorna string legible: "15 min" o "1h 30min"
         """
-        delta = now_co() - self.fecha_pedido
+        delta = datetime.now() - self.fecha_pedido
         minutos = int(delta.total_seconds() / 60)
         if minutos < 60:
             return f"{minutos} min"
@@ -511,7 +486,7 @@ class Domicilio(db.Model):
         if self.estado in [EstadoDomicilio.ENTREGADO, EstadoDomicilio.CANCELADO]:
             return False
         
-        delta = now_co() - self.fecha_pedido
+        delta = datetime.now() - self.fecha_pedido
         minutos = int(delta.total_seconds() / 60)
         
         # Alertar si lleva más de 45 minutos y no ha sido entregado
@@ -588,7 +563,7 @@ class Repartidor(db.Model):
     placa_vehiculo = db.Column(db.String(20))
     tipo_vehiculo = db.Column(db.String(50))  # moto, bicicleta, carro
     activo = db.Column(db.Boolean, default=True)
-    fecha_registro = db.Column(db.DateTime, default=now_co)
+    fecha_registro = db.Column(db.DateTime, default=datetime.now)
     
     # Estadísticas
     total_domicilios = db.Column(db.Integer, default=0)
@@ -683,7 +658,7 @@ def facturar_sesion(sesion_id):
             fecha_vencimiento = datetime.strptime(fecha_vencimiento_str, '%Y-%m-%d').date()
         
         # Fecha de pago real
-        fecha_pago_real = now_co() if estado_pago == 'pagada' else None
+        fecha_pago_real = datetime.now() if estado_pago == 'pagada' else None
         
         # Saldo pendiente
         saldo_pendiente = total if estado_pago == 'pendiente' else 0
@@ -710,7 +685,7 @@ def facturar_sesion(sesion_id):
         # Actualizar sesión
         sesion.total = total
         sesion.activa = False
-        sesion.fecha_fin = now_co()
+        sesion.fecha_fin = datetime.now()
         
         # Marcar todos los pedidos como pagados (actualización en bloque)
         db.session.query(Pedido).filter(Pedido.sesion_id == sesion.id).update({"pagado": True, "estado": "entregado"}, synchronize_session=False)
@@ -948,7 +923,7 @@ def editar_factura(factura_id):
 
         # Ajustes según estado de pago
         if estado_pago == 'pagada':
-            factura.fecha_pago_real = now_co()
+            factura.fecha_pago_real = datetime.now()
             factura.saldo_pendiente = 0
         elif estado_pago == 'pendiente':
             factura.fecha_pago_real = None
@@ -1117,7 +1092,7 @@ def marcar_factura_pagada(factura_id):
         # Pago completo
         factura.estado_pago = 'pagada'
         factura.saldo_pendiente = 0
-        factura.fecha_pago_real = now_co()
+        factura.fecha_pago_real = datetime.now()
         flash(f'Factura {factura.numero_consecutivo} marcada como pagada completamente', 'success')
     else:
         # Pago parcial
@@ -1163,7 +1138,7 @@ def configuracion_restaurante():
         flash('Configuración actualizada exitosamente', 'success')
         return redirect(url_for('configuracion_restaurante'))
     
-    return render_template("configuracion_restaurante.html", config=config, now=now_co())
+    return render_template("configuracion_restaurante.html", config=config, now=datetime.now())
 
 # Actualizar la función init_db() para incluir la configuración inicial
 def init_db_facturacion():
@@ -1218,7 +1193,7 @@ def dashboard():
     mesas = Mesa.query.filter_by(activa=True).order_by(Mesa.numero).all()
     
     # Obtener solo sesiones activas de hoy
-    hoy = now_co().date()
+    hoy = datetime.now().date()
     sesiones_activas = Sesion.query.filter(
         Sesion.activa == True,
         db.func.date(Sesion.fecha_inicio) == hoy
@@ -1257,7 +1232,7 @@ def dashboard():
     return render_template("dashboard.html", 
                          mesas=mesas, 
                          info_mesas=info_mesas,
-                         now=now_co())
+                         now=datetime.now())
 
 @app.route("/nuevo_pedido/<int:mesa_id>", methods=["GET", "POST"])
 @login_required
@@ -1341,7 +1316,7 @@ def ver_mesa(mesa_id):
                 totales_sesion_activa['total_pendiente'] += subtotal
     
     # Obtener sesiones anteriores de hoy con sus totales calculados
-    hoy = now_co().date()
+    hoy = datetime.now().date()
     sesiones_anteriores = Sesion.query.filter(
         Sesion.mesa_id == mesa_id,
         Sesion.activa == False,
@@ -1382,7 +1357,7 @@ def ver_mesa(mesa_id):
 @app.route("/cocina")
 @login_required
 def cocina():
-    hoy = now_co().date()
+    hoy = datetime.now().date()
     
     pedidos_pendientes = Pedido.query.filter(
         db.func.date(Pedido.fecha) == hoy,
@@ -1392,13 +1367,13 @@ def cocina():
     return render_template(
         "cocina.html",
         pedidos=pedidos_pendientes,
-        now=now_co()
+        now=datetime.now()
     )
 
 @app.route("/api/cocina/pedidos")
 @login_required
 def api_cocina_pedidos():
-    hoy = now_co().date()
+    hoy = datetime.now().date()
     
     pedidos = Pedido.query.filter(
         db.func.date(Pedido.fecha) == hoy,
@@ -1429,7 +1404,7 @@ def actualizar_estado(pedido_id, estado):
     if estado in estados_validos:
         pedido.estado = estado
         try:
-            pedido.estado_actualizado = now_co()
+            pedido.estado_actualizado = datetime.now()
         except Exception:
             # En caso de que la columna no exista en DB todavía
             pass
@@ -1462,9 +1437,9 @@ def notificaciones_pendientes():
 
     since = request.args.get('since')
     try:
-        since_dt = datetime.fromisoformat(since) if since else (now_co() - timedelta(seconds=10))
+        since_dt = datetime.fromisoformat(since) if since else (datetime.now() - timedelta(seconds=10))
     except Exception:
-        since_dt = now_co() - timedelta(seconds=10)
+        since_dt = datetime.now() - timedelta(seconds=10)
 
     pedidos = Pedido.query.filter(
         Pedido.estado == 'listo',
@@ -1486,7 +1461,7 @@ def notificaciones_pendientes():
 @app.route("/pagar_mesa/<int:mesa_id>")
 @login_required
 def pagar_mesa(mesa_id):
-    hoy = now_co().date()
+    hoy = datetime.now().date()
     pedidos = Pedido.query.filter(
         Pedido.mesa_id == mesa_id,
         db.func.date(Pedido.fecha) == hoy,
@@ -1572,7 +1547,7 @@ def historial():
                          sesiones_por_dia=sesiones_por_dia,
                          totales_por_dia=totales_por_dia,
                          fecha_seleccionada=fecha_seleccionada,
-                         now=now_co())
+                         now=datetime.now())
 
 @app.route("/administrar_mesas", methods=["GET", "POST"])
 @login_required
@@ -1583,43 +1558,66 @@ def administrar_mesas():
     
     if request.method == "POST":
         accion = request.form.get("accion")
-        
+
+        # ── Bloqueo global: la mesa Domicilios es del sistema ──
+        mesa_id = request.form.get("mesa_id", type=int)
+        if mesa_id:
+            mesa_check = Mesa.query.get(mesa_id)
+            if mesa_check and mesa_check.nombre_personalizado == 'Domicilios':
+                flash('La mesa Domicilios es del sistema y no puede modificarse.', 'error')
+                return redirect(url_for('administrar_mesas'))
+
         if accion == "agregar":
-            numero = request.form.get("numero", type=int)
-            capacidad = request.form.get("capacidad", type=int, default=4)
-            
-            if Mesa.query.filter_by(numero=numero).first():
-                flash(f'La mesa {numero} ya existe', 'error')
+            tipo_id              = request.form.get("tipo_id", "numero")
+            capacidad            = request.form.get("capacidad", type=int) or 4
+            nombre_personalizado = (request.form.get("nombre_personalizado") or "").strip() or None
+
+            if tipo_id == "nombre":
+                if not nombre_personalizado:
+                    flash('Debes escribir un nombre para la mesa.', 'error')
+                elif Mesa.query.filter_by(nombre_personalizado=nombre_personalizado).first():
+                    flash(f'Ya existe una mesa llamada "{nombre_personalizado}".', 'error')
+                else:
+                    mesa = Mesa(numero=None, nombre_personalizado=nombre_personalizado, capacidad=capacidad)
+                    db.session.add(mesa)
+                    db.session.commit()
+                    flash(f'Mesa "{nombre_personalizado}" agregada exitosamente.', 'success')
             else:
-                mesa = Mesa(numero=numero, capacidad=capacidad)
-                db.session.add(mesa)
-                db.session.commit()
-                flash(f'Mesa {numero} agregada exitosamente', 'success')
-        
+                numero = request.form.get("numero", type=int)
+                if not numero:
+                    flash('Debes ingresar un número de mesa válido.', 'error')
+                elif Mesa.query.filter_by(numero=numero).first():
+                    flash(f'La mesa #{numero} ya existe.', 'error')
+                else:
+                    mesa = Mesa(numero=numero, nombre_personalizado=None, capacidad=capacidad)
+                    db.session.add(mesa)
+                    db.session.commit()
+                    flash(f'Mesa {numero} agregada exitosamente.', 'success')
+
         elif accion == "eliminar":
-            mesa_id = request.form.get("mesa_id", type=int)
             mesa = Mesa.query.get(mesa_id)
             if mesa:
-                # Verificar si tiene pedidos
                 if Pedido.query.filter_by(mesa_id=mesa_id).first():
-                    flash(f'No se puede eliminar la mesa {mesa.numero} porque tiene pedidos asociados', 'error')
+                    flash(f'No se puede eliminar "{mesa.display_name}" porque tiene pedidos asociados.', 'error')
                 else:
+                    nombre = mesa.display_name
                     db.session.delete(mesa)
                     db.session.commit()
-                    flash(f'Mesa {mesa.numero} eliminada exitosamente', 'success')
-        
+                    flash(f'"{nombre}" eliminada exitosamente.', 'success')
+
         elif accion == "toggle":
-            mesa_id = request.form.get("mesa_id", type=int)
             mesa = Mesa.query.get(mesa_id)
             if mesa:
                 mesa.activa = not mesa.activa
                 db.session.commit()
                 estado = "activada" if mesa.activa else "desactivada"
-                flash(f'Mesa {mesa.numero} {estado}', 'success')
-        
+                flash(f'"{mesa.display_name}" {estado}.', 'success')
+
         return redirect(url_for('administrar_mesas'))
-    
-    mesas = Mesa.query.order_by(Mesa.numero).all()
+
+    # Mostrar todas las mesas excepto Domicilios (se renderiza aparte en el HTML)
+    mesas = Mesa.query.filter(Mesa.nombre_personalizado != 'Domicilios') \
+                      .order_by(Mesa.numero.nullslast(), Mesa.nombre_personalizado).all()
     return render_template("administrar_mesas.html", mesas=mesas)
 
 @app.route("/administrar_usuarios", methods=["GET", "POST"])
@@ -1656,7 +1654,7 @@ def verificar_nuevos_pedidos():
     """
     RAZÓN: Endpoint ligero para verificar nuevos pedidos sin recargar toda la página
     """
-    hoy = now_co().date()
+    hoy = datetime.now().date()
     
     # Solo pedidos pendientes y preparando
     pedidos = Pedido.query.filter(
@@ -1673,7 +1671,7 @@ def verificar_nuevos_pedidos():
                 'producto': p.producto,
                 'cantidad': p.cantidad,
                 'estado': p.estado,
-                'timestamp': ts_utc(p.fecha)   # UTC timestamp correcto para JS Date.now()
+                'timestamp': p.fecha.timestamp()
             }
             for p in pedidos
         ],
@@ -1719,7 +1717,7 @@ def liberar_mesa(mesa_id):
         
         # Cerrar sesión
         sesion_activa.activa = False
-        sesion_activa.fecha_fin = now_co()
+        sesion_activa.fecha_fin = datetime.now()
         
         db.session.commit()
         flash(f'Mesa {mesa_id} liberada exitosamente', 'success')
@@ -1994,7 +1992,7 @@ def nuevo_gasto():
             if fecha_str:
                 fecha = datetime.strptime(fecha_str, '%Y-%m-%dT%H:%M')
             else:
-                fecha = now_co()
+                fecha = datetime.now()
             
             # Convertir fecha de vencimiento
             fecha_vencimiento = None
@@ -2002,7 +2000,7 @@ def nuevo_gasto():
                 fecha_vencimiento = datetime.strptime(fecha_vencimiento_str, '%Y-%m-%d').date()
             
             # Si está pagado, la fecha de pago es ahora
-            fecha_pago_real = now_co() if estado_pago == 'pagado' else None
+            fecha_pago_real = datetime.now() if estado_pago == 'pagado' else None
             
             # Crear gasto
             gasto = Gasto(
@@ -2041,7 +2039,7 @@ def nuevo_gasto():
     return render_template("gastos/nuevo_gasto.html",
                          categorias=categorias,
                          proveedores=proveedores,
-                         now=now_co())
+                         now=datetime.now())
 
 
 # Función auxiliar para verificar presupuestos
@@ -2051,8 +2049,8 @@ def verificar_presupuesto(categoria_id):
     y genera alertas en flash messages.
     """
     from datetime import datetime
-    mes_actual = now_co().month
-    anio_actual = now_co().year
+    mes_actual = datetime.now().month
+    anio_actual = datetime.now().year
     
     presupuesto = Presupuesto.query.filter_by(
         categoria_id=categoria_id,
@@ -2227,7 +2225,7 @@ def marcar_gasto_pagado(gasto_id):
     gasto = Gasto.query.get_or_404(gasto_id)
     
     gasto.estado_pago = 'pagado'
-    gasto.fecha_pago_real = now_co()
+    gasto.fecha_pago_real = datetime.now()
     
     db.session.commit()
     
@@ -2348,12 +2346,12 @@ def reporte_financiero():
     
     if not fecha_inicio:
         # Primer día del mes actual
-        hoy = now_co()
+        hoy = datetime.now()
         fecha_inicio = hoy.replace(day=1).strftime('%Y-%m-%d')
     
     if not fecha_fin:
         # Hoy
-        fecha_fin = now_co().strftime('%Y-%m-%d')
+        fecha_fin = datetime.now().strftime('%Y-%m-%d')
     
     # Convertir a objetos datetime
     # IMPORTANTE: Definimos el inicio del día a las 03:00 (cierre a partir de las 03:00)
@@ -2452,7 +2450,7 @@ def reporte_financiero():
                          gastos_por_categoria=gastos_por_categoria,  # Para JSON/gráficos
                          gastos_por_categoria_tabla=gastos_por_categoria_tabla,  # Para tabla HTML
                          evolucion_diaria=evolucion_diaria,
-                         now=now_co())
+                         now=datetime.now())
 # =========================
 # INICIALIZACIÓN
 # =========================
@@ -2460,7 +2458,14 @@ def reporte_financiero():
 def init_db():
     with app.app_context():
         db.create_all()
-        
+
+        # Migración segura: agregar nombre_personalizado si no existe (SQLite no soporta ALTER COLUMN)
+        try:
+            db.engine.execute("ALTER TABLE mesa ADD COLUMN nombre_personalizado VARCHAR(40)")
+            print("✅ Columna nombre_personalizado agregada a mesa")
+        except Exception:
+            pass  # Ya existe, ignorar
+
         # Crear usuario admin si no existe
         if not Usuario.query.filter_by(username='admin').first():
             admin = Usuario(username='admin', nombre='Administrador', rol='admin')
@@ -2484,6 +2489,12 @@ def init_db():
             for i in range(1, 11):
                 mesa = Mesa(numero=i, capacidad=4)
                 db.session.add(mesa)
+
+        # Crear mesa Domicilios si no existe
+        if not Mesa.query.filter_by(nombre_personalizado='Domicilios').first():
+            domicilios = Mesa(numero=None, nombre_personalizado='Domicilios', capacidad=9999, activa=True)
+            db.session.add(domicilios)
+            print("✅ Mesa Domicilios creada")
         
         db.session.commit()
         print("Base de datos inicializada correctamente")
@@ -2524,8 +2535,8 @@ def lista_presupuestos():
     
     # Obtener mes y año actual
     from datetime import datetime
-    mes_actual = now_co().month
-    anio_actual = now_co().year
+    mes_actual = datetime.now().month
+    anio_actual = datetime.now().year
     
     # Obtener presupuestos del mes actual
     presupuestos = Presupuesto.query.filter_by(
@@ -2607,8 +2618,8 @@ def nuevo_presupuesto():
     categorias = CategoriaGasto.query.filter_by(activa=True).order_by(CategoriaGasto.nombre).all()
     
     from datetime import datetime
-    mes_actual = now_co().month
-    anio_actual = now_co().year
+    mes_actual = datetime.now().month
+    anio_actual = datetime.now().year
     
     return render_template("presupuestos/nuevo_presupuesto.html",
                          categorias=categorias,
@@ -2672,11 +2683,11 @@ def copiar_presupuestos_mes_siguiente():
     from datetime import datetime
     from dateutil.relativedelta import relativedelta
     
-    mes_actual = now_co().month
-    anio_actual = now_co().year
+    mes_actual = datetime.now().month
+    anio_actual = datetime.now().year
     
     # Calcular mes siguiente
-    fecha_siguiente = now_co() + relativedelta(months=1)
+    fecha_siguiente = datetime.now() + relativedelta(months=1)
     mes_siguiente = fecha_siguiente.month
     anio_siguiente = fecha_siguiente.year
     
@@ -2752,9 +2763,9 @@ def lista_domicilios():
             flash('Fecha inválida', 'error')
     else:
         # Por defecto, mostrar domicilios del día actual
-        hoy = now_co().date()
+        hoy = datetime.now().date()
         inicio = datetime(hoy.year, hoy.month, hoy.day, 3, 0, 0)
-        if now_co().hour < 3:
+        if datetime.now().hour < 3:
             inicio = inicio - timedelta(days=1)
         fin = inicio + timedelta(days=1)
         query = query.filter(Domicilio.fecha_pedido >= inicio, Domicilio.fecha_pedido < fin)
@@ -2780,7 +2791,7 @@ def lista_domicilios():
                          total_ventas=total_ventas,
                          estado_filtro=estado,
                          fecha_filtro=fecha,
-                         now=now_co())
+                         now=datetime.now())
 
 # =========================
 # AGREGAR ESTA RUTA EN app.py
@@ -2808,7 +2819,7 @@ def ver_domicilio(domicilio_id):
                          domicilio=domicilio,
                          repartidores=repartidores,
                          zonas=zonas,
-                         now=now_co())
+                         now=datetime.now())
 
 
 @app.route("/domicilio/nuevo", methods=["GET", "POST"])
@@ -2899,7 +2910,7 @@ def nuevo_domicilio():
                          items_menu=items_menu,
                          zonas=zonas,
                          usuarios=usuarios,
-                         now=now_co())
+                         now=datetime.now())
 
 
 # =========================
@@ -2929,7 +2940,7 @@ def actualizar_estado_item_domicilio(item_id):
         todos_listos = all(i.estado_cocina == 'listo' for i in item.domicilio.items)
         if todos_listos and item.domicilio.estado == 'preparando':
             item.domicilio.estado = EstadoDomicilio.LISTO
-            item.domicilio.estado_actualizado = now_co()
+            item.domicilio.estado_actualizado = datetime.now()
             db.session.commit()
             flash(f'Domicilio #{item.domicilio_id} marcado como LISTO para enviar', 'success')
     
@@ -2961,11 +2972,11 @@ def actualizar_estado_domicilio(domicilio_id):
         return redirect(url_for('ver_domicilio', domicilio_id=domicilio_id))
     
     domicilio.estado = nuevo_estado
-    domicilio.estado_actualizado = now_co()
+    domicilio.estado_actualizado = datetime.now()
     
     # Si se marca como entregado, guardar la hora de entrega
     if nuevo_estado == EstadoDomicilio.ENTREGADO:
-        domicilio.fecha_entrega_real = now_co()
+        domicilio.fecha_entrega_real = datetime.now()
         domicilio.pagado = True
     
     # Si se asigna repartidor
@@ -3048,7 +3059,7 @@ def cancelar_domicilio(domicilio_id):
     
     domicilio.estado = EstadoDomicilio.CANCELADO
     domicilio.notas_cancelacion = motivo
-    domicilio.estado_actualizado = now_co()
+    domicilio.estado_actualizado = datetime.now()
     
     db.session.commit()
     
@@ -3117,7 +3128,7 @@ def facturar_domicilio(domicilio_id):
                 notas=notas_factura,
                 estado_pago=estado_pago,
                 fecha_vencimiento=fecha_vencimiento,
-                fecha_pago_real=now_co() if estado_pago == 'pagada' else None,
+                fecha_pago_real=datetime.now() if estado_pago == 'pagada' else None,
                 saldo_pendiente=total if estado_pago == 'pendiente' else 0
             )
             
@@ -3139,7 +3150,7 @@ def facturar_domicilio(domicilio_id):
             return redirect(url_for('facturar_domicilio', domicilio_id=domicilio_id))
     
     # GET: Calcular fecha de vencimiento por defecto (15 días)
-    fecha_vencimiento_default = (now_co() + timedelta(days=15)).strftime('%Y-%m-%d')
+    fecha_vencimiento_default = (datetime.now() + timedelta(days=15)).strftime('%Y-%m-%d')
     
     return render_template("domicilios/facturar_domicilio.html",
                          domicilio=domicilio,
@@ -3161,9 +3172,9 @@ def cocina_domicilios():
         return redirect(url_for('dashboard'))
     
     # Obtener domicilios activos del día
-    hoy = now_co().date()
+    hoy = datetime.now().date()
     inicio = datetime(hoy.year, hoy.month, hoy.day, 3, 0, 0)
-    if now_co().hour < 3:
+    if datetime.now().hour < 3:
         inicio = inicio - timedelta(days=1)
     fin = inicio + timedelta(days=1)
     
@@ -3179,7 +3190,7 @@ def cocina_domicilios():
     
     return render_template("domicilios/cocina_domicilios.html",
                          domicilios=domicilios_activos,
-                         now=now_co())
+                         now=datetime.now())
 
 
 # =========================
@@ -3281,9 +3292,9 @@ def api_domicilios_activos():
     RAZÓN: Endpoint para actualizar en tiempo real los domicilios activos.
     Para pantalla de cocina o repartidores.
     """
-    hoy = now_co().date()
+    hoy = datetime.now().date()
     inicio = datetime(hoy.year, hoy.month, hoy.day, 3, 0, 0)
-    if now_co().hour < 3:
+    if datetime.now().hour < 3:
         inicio = inicio - timedelta(days=1)
     fin = inicio + timedelta(days=1)
     domicilios = Domicilio.query.filter(
@@ -3378,7 +3389,14 @@ else:
         try:
             db.create_all()
             print("✅ Tablas creadas/verificadas")
-            
+
+            # Migración segura para nombre_personalizado
+            try:
+                db.engine.execute("ALTER TABLE mesa ADD COLUMN nombre_personalizado VARCHAR(40)")
+                print("✅ Columna nombre_personalizado agregada")
+            except Exception:
+                pass  # Ya existe
+
             # Crear admin si no existe
             if not Usuario.query.filter_by(username='admin').first():
                 admin = Usuario(username='admin', nombre='Administrador', rol='admin')
@@ -3398,6 +3416,13 @@ else:
                 print("✅ Usuarios por defecto creados")
             else:
                 print("ℹ️ Usuarios ya existen")
+
+            # Crear mesa Domicilios si no existe
+            if not Mesa.query.filter_by(nombre_personalizado='Domicilios').first():
+                domicilios = Mesa(numero=None, nombre_personalizado='Domicilios', capacidad=9999, activa=True)
+                db.session.add(domicilios)
+                db.session.commit()
+                print("✅ Mesa Domicilios creada")
                 
         except Exception as e:
             print(f"⚠️ Error en inicialización: {e}")
