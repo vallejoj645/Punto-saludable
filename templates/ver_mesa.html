@@ -604,6 +604,21 @@
             <button class="btn-ver-cuenta" onclick="abrirModalCuenta('sesion_activa')">
                 💰 Ver Cuenta Detallada
             </button>
+            {% if mesa.nombre_personalizado and 'domicilio' in mesa.nombre_personalizado|lower %}
+            <div style="margin-top: 1rem;">
+                <label style="font-weight: 600; color: #1e293b; display: block; margin-bottom: 0.5rem;">
+                    📍 Dirección de entrega
+                </label>
+                <input 
+                    type="text" 
+                    id="direccion-domicilio"
+                    placeholder="Ej: Calle 10 #5-20, Barrio Centro"
+                    style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e2e8f0; border-radius: 0.75rem; font-size: 1rem; outline: none;"
+                    oninput="this.style.borderColor='#667eea'"
+                >
+            </div>
+        
+
 
             {# ===== BOTÓN WHATSAPP: solo aparece si la mesa es Domicilios ===== #}
             {% if mesa.nombre_personalizado and 'domicilio' in mesa.nombre_personalizado|lower %}
