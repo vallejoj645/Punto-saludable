@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cocina - Restaurante</title>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- CSS del sistema -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+    <style>
+        /* ─── VARIABLES ─────────────────────────────────── */
+        :root {
+            --bg:        #080808;
+            --surface:   #111111;
+            --surface2:  #1a1a1a;
+            --border:    #252525;
+            --green:     #22c55e;
+            --green-dim: #16a34a;
+            --green-glow:rgba(34,197,94,.18);
+            --amber:     #f59e0b;
+            --red:       #ef4444;
+            --cyan:      #06b6d4;
+            --text:      #f0f0f0;
+            --muted:     #6b7280;
+            --card-shadow: 0 4px 24px rgba(0,0,0,.6);
+        }
+
+        /* ─── RESET / BASE ──────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+        }
+
+        /* subtle grid texture */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(34,197,94,.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(34,197,94,.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ─── NAVBAR ────────────────────────────────────── */
+        .navbar {
+            background: rgba(8,8,8,.95);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--green);
+            text-decoration: none;
+            letter-spacing: -.02em;
+        }
+
+        .nav-brand svg { stroke: var(--green); }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: .9rem;
+            font-weight: 500;
+            transition: color .2s;
+        }
+
+        .nav-link:hover { color: var(--text); }
+        .nav-link.active { color: var(--green); }
+        .nav-link svg { width: 15px; height: 15px; }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            color: var(--muted);
+            font-size: .9rem;
+        }
+
+        .nav-logout {
+            border: 1px solid var(--border);
+            padding: .35rem .85rem;
+            border-radius: .4rem;
+            color: var(--muted) !important;
+        }
+
+        .nav-logout:hover {
+            border-color: var(--red);
+            color: var(--red) !important;
+        }
+
+        /* ─── HEADER ─────────────────────────────────────── */
+        .cocina-header {
+            text-align: center;
+            padding: 2.5rem 2rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cocina-header::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 60% 80% at 50% 110%, var(--green-glow), transparent);
+            pointer-events: none;
+        }
+
+        .cocina-header-icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 1rem;
+            background: var(--green-glow);
+            border: 1px solid var(--green);
+            border-radius: .75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cocina-header-icon svg { stroke: var(--green); width: 28px; height: 28px; }
+
+        .cocina-header h1 {
+            font-family: 'Space Mono', monospace;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -.04em;
+            margin-bottom: .4rem;
+        }
+
+        .cocina-header h1 span { color: var(--green); }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 1rem;
+        }
+
+        /* ─── STATUS BAR ─────────────────────────────────── */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 1.1rem 1.5rem;
+            border-radius: .85rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+        }
+
+        .status-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: .5rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .status-icon svg { width: 18px; height: 18px; stroke: var(--green); }
+
+        .status-label {
+            font-size: .78rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        .status-value {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1;
+        }
+
+        /* probar sonido */
+        .btn-sound {
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .45rem .9rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: .5rem;
+            color: var(--muted);
+            font-size: .82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .btn-sound:hover {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .btn-sound svg { width: 14px; height: 14px; }
+
+        /* refresh indicator */
+        .refresh-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .5rem 1rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: .5rem;
+            font-family: 'Space Mono', monospace;
+            font-size: .8rem;
+            color: var(--muted);
+        }
+
+        .refresh-indicator svg { width: 14px; height: 14px; stroke: var(--green); }
+
+        .refresh-indicator.updating {
+            border-color: var(--amber);
+            color: var(--amber);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .refresh-indicator.updating svg { stroke: var(--amber); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .6; }
+        }
+
+        /* ─── PEDIDOS GRID ───────────────────────────────── */
+        .pedidos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.25rem;
+        }
+
+        /* ─── PEDIDO CARD ────────────────────────────────── */
+        .pedido-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.4rem;
+            box-shadow: var(--card-shadow);
+            transition: transform .25s, box-shadow .25s, border-color .25s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* left accent stripe */
+        .pedido-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--amber);
+            border-radius: 1rem 0 0 1rem;
+        }
+
+        .pedido-card.estado-preparando::before { background: var(--cyan); }
+
+        .pedido-card.nuevo {
+            animation: slideInBounce .5s ease-out, highlightDark 2s ease-in-out;
+            border-color: var(--amber);
+        }
+
+        @keyframes slideInBounce {
+            0%   { opacity: 0; transform: translateY(20px) scale(.95); }
+            60%  { transform: translateY(-6px) scale(1.01); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes highlightDark {
+            0%, 100% { background: var(--surface); }
+            50%       { background: #1c1700; }
+        }
+
+        .pedido-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,.7), 0 0 0 1px var(--border);
+        }
+
+        /* ─── CARD HEADER ────────────────────────────────── */
+        .pedido-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .pedido-mesa {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--green);
+            line-height: 1;
+        }
+
+        .pedido-tiempo {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: .2rem;
+        }
+
+        .tiempo-hora {
+            display: flex;
+            align-items: center;
+            gap: .3rem;
+            font-family: 'Space Mono', monospace;
+            font-size: .9rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .tiempo-hora svg { width: 13px; height: 13px; stroke: var(--muted); }
+
+        .tiempo-transcurrido {
+            font-size: .72rem;
+            color: var(--muted);
+        }
+
+        /* ─── PRODUCTO ───────────────────────────────────── */
+        .pedido-producto {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .pedido-cantidad {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2rem;
+            height: 2rem;
+            padding: 0 .5rem;
+            background: var(--green);
+            color: #000;
+            border-radius: .4rem;
+            font-family: 'Space Mono', monospace;
+            font-size: .85rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* ─── NOTAS ──────────────────────────────────────── */
+        .pedido-notas {
+            background: rgba(245,158,11,.08);
+            border: 1px solid rgba(245,158,11,.3);
+            padding: .85rem 1rem;
+            border-radius: .6rem;
+            margin: .85rem 0;
+        }
+
+        .pedido-notas-header {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            color: var(--amber);
+            font-size: .78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: .4rem;
+        }
+
+        .pedido-notas-header svg { width: 13px; height: 13px; stroke: var(--amber); }
+
+        .pedido-notas p {
+            color: #d1a554;
+            font-size: .9rem;
+        }
+
+        /* ─── FOOTER DEL CARD ────────────────────────────── */
+        .pedido-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: .85rem;
+            padding-top: .85rem;
+            border-top: 1px solid var(--border);
+            font-size: .85rem;
+        }
+
+        .pedido-mesero {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            color: var(--muted);
+        }
+
+        .pedido-mesero svg { width: 14px; height: 14px; stroke: var(--muted); }
+
+        /* estado badges */
+        .estado-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            padding: .3rem .75rem;
+            border-radius: .4rem;
+            font-size: .75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .estado-badge svg { width: 12px; height: 12px; }
+
+        .estado-pendiente {
+            background: rgba(239,68,68,.12);
+            color: #f87171;
+            border: 1px solid rgba(239,68,68,.25);
+        }
+
+        .estado-pendiente svg { stroke: #f87171; }
+
+        .estado-preparando {
+            background: rgba(6,182,212,.12);
+            color: var(--cyan);
+            border: 1px solid rgba(6,182,212,.25);
+        }
+
+        .estado-preparando svg { stroke: var(--cyan); }
+
+        /* ─── BOTONES DE ACCIÓN ──────────────────────────── */
+        .pedido-actions {
+            margin-top: 1.1rem;
+            display: grid;
+            gap: .5rem;
+        }
+
+        .btn-cocina {
+            padding: .9rem 1rem;
+            font-size: .92rem;
+            font-weight: 700;
+            border-radius: .65rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            text-decoration: none;
+            transition: all .2s;
+            border: none;
+            cursor: pointer;
+            letter-spacing: .01em;
+        }
+
+        .btn-cocina svg { width: 16px; height: 16px; }
+
+        /* comenzar a preparar */
+        .btn-warning {
+            background: rgba(245,158,11,.15);
+            color: var(--amber);
+            border: 1px solid rgba(245,158,11,.4);
+        }
+
+        .btn-warning:hover {
+            background: rgba(245,158,11,.25);
+            border-color: var(--amber);
+            box-shadow: 0 0 18px rgba(245,158,11,.2);
+        }
+
+        .btn-warning svg { stroke: var(--amber); }
+
+        /* marcar como listo */
+        .btn-success {
+            background: rgba(34,197,94,.15);
+            color: var(--green);
+            border: 1px solid rgba(34,197,94,.4);
+        }
+
+        .btn-success:hover {
+            background: rgba(34,197,94,.25);
+            border-color: var(--green);
+            box-shadow: 0 0 18px var(--green-glow);
+        }
+
+        .btn-success svg { stroke: var(--green); }
+
+        /* ─── EMPTY STATE ────────────────────────────────── */
+        .empty-state {
+            text-align: center;
+            padding: 5rem 2rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+        }
+
+        .empty-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 1.5rem;
+            background: var(--green-glow);
+            border: 1px solid rgba(34,197,94,.3);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .empty-icon svg { stroke: var(--green); width: 34px; height: 34px; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-8px); }
+        }
+
+        .empty-state h2 {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.5rem;
+            color: var(--text);
+            margin-bottom: .5rem;
+        }
+
+        .text-muted { color: var(--muted); }
+
+        /* ─── TOAST ──────────────────────────────────────── */
+        .notification-toast {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--surface);
+            border: 1px solid var(--green);
+            box-shadow: 0 8px 40px rgba(0,0,0,.6), 0 0 20px var(--green-glow);
+            color: var(--text);
+            padding: 1rem 1.4rem;
+            border-radius: .75rem;
+            display: none;
+            align-items: center;
+            gap: .75rem;
+            z-index: 2000;
+            animation: slideInRight .4s ease-out;
+            min-width: 260px;
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(110%); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        .notification-toast.show { display: flex; }
+
+        .notification-icon svg { width: 20px; height: 20px; stroke: var(--green); }
+
+        .notification-text { font-weight: 600; font-size: .9rem; }
+
+        /* ─── RESPONSIVE ─────────────────────────────────── */
+        @media (max-width: 768px) {
+            .cocina-header h1 { font-size: 1.6rem; }
+
+            .status-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .pedidos-grid { grid-template-columns: 1fr; }
+
+            .notification-toast {
+                right: 12px;
+                left: 12px;
+                top: 72px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ── NAVBAR ── -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('dashboard') }}" class="nav-brand">
+                <i data-lucide="utensils"></i>
+                Restaurante Manager
+            </a>
+            <div class="nav-menu">
+                <a href="{{ url_for('cocina') }}" class="nav-link active">
+                    <i data-lucide="chef-hat"></i> Cocina
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="nav-link">
+                    <i data-lucide="bar-chart-2"></i> Dashboard
+                </a>
+                <span class="nav-user">
+                    <i data-lucide="user" style="width:14px;height:14px;"></i>
+                    {{ current_user.nombre }}
+                </span>
+                <a href="{{ url_for('logout') }}" class="nav-link nav-logout">Salir</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <!-- ── HEADER ── -->
+        <div class="cocina-header">
+            <div class="cocina-header-icon">
+                <i data-lucide="chef-hat"></i>
+            </div>
+            <h1>Panel de <span>Cocina</span></h1>
+            <p class="subtitle">Pedidos pendientes y en preparación</p>
+        </div>
+
+        <!-- ── STATUS BAR ── -->
+        <div class="status-bar">
+
+            <div class="status-item">
+                <div class="status-icon"><i data-lucide="clipboard-list"></i></div>
+                <div>
+                    <div class="status-label">Total Pedidos</div>
+                    <div class="status-value" id="total-pedidos">{{ pedidos|length }}</div>
+                </div>
+                <button onclick="playAlertSound(); showToast('Probando sonido', 'info')"
+                        class="btn-sound">
+                    <i data-lucide="volume-2"></i> Probar Sonido
+                </button>
+            </div>
+
+            <div class="status-item">
+                <div class="status-icon"><i data-lucide="hourglass"></i></div>
+                <div>
+                    <div class="status-label">Pendientes</div>
+                    <div class="status-value" id="pendientes-count">
+                        {{ pedidos|selectattr('estado', 'equalto', 'pendiente')|list|length }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-item">
+                <div class="status-icon"><i data-lucide="flame"></i></div>
+                <div>
+                    <div class="status-label">En Preparación</div>
+                    <div class="status-value" id="preparando-count">
+                        {{ pedidos|selectattr('estado', 'equalto', 'preparando')|list|length }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-item">
+                <span class="refresh-indicator" id="refresh-status">
+                    <i data-lucide="refresh-cw"></i>
+                    Actualizando en <span id="countdown">5</span>s
+                </span>
+            </div>
+
+        </div>
+
+        <!-- ── PEDIDOS GRID ── -->
+        <div id="pedidos-container">
+            {% if pedidos %}
+            <div class="pedidos-grid" id="pedidos-grid">
+                {% for pedido in pedidos %}
+                <div class="pedido-card estado-{{ pedido.estado }}" data-pedido-id="{{ pedido.id }}">
+
+                    <div class="pedido-header">
+                        <div class="pedido-mesa">Mesa {{ pedido.mesa.numero }}</div>
+                        <div class="pedido-tiempo">
+                            <div class="tiempo-hora">
+                                <i data-lucide="clock"></i>
+                                {{ pedido.fecha.strftime('%H:%M') }}
+                            </div>
+                            <div class="tiempo-transcurrido" data-timestamp="{{ pedido.fecha.timestamp() }}">
+                                Hace {{ ((now - pedido.fecha).total_seconds() / 60)|int }} min
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pedido-producto">
+                        <span class="pedido-cantidad">{{ pedido.cantidad }}</span>
+                        {{ pedido.producto }}
+                    </div>
+
+                    {% if pedido.notas %}
+                    <div class="pedido-notas">
+                        <div class="pedido-notas-header">
+                            <i data-lucide="alert-triangle"></i> Notas Especiales
+                        </div>
+                        <p>{{ pedido.notas }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="pedido-info">
+                        <div class="pedido-mesero">
+                            <i data-lucide="user"></i>
+                            <span>{{ pedido.mesero.nombre }}</span>
+                        </div>
+                        <span class="estado-badge estado-{{ pedido.estado }}">
+                            {% if pedido.estado == 'pendiente' %}
+                                <i data-lucide="hourglass"></i> Pendiente
+                            {% else %}
+                                <i data-lucide="flame"></i> Preparando
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="pedido-actions">
+                        {% if pedido.estado == 'pendiente' %}
+                        <a href="{{ url_for('actualizar_estado', pedido_id=pedido.id, estado='preparando') }}"
+                           class="btn-cocina btn-warning">
+                            <i data-lucide="flame"></i> Comenzar a Preparar
+                        </a>
+                        {% elif pedido.estado == 'preparando' %}
+                        <a href="{{ url_for('actualizar_estado', pedido_id=pedido.id, estado='listo') }}"
+                           class="btn-cocina btn-success">
+                            <i data-lucide="check-circle"></i> Marcar como Listo
+                        </a>
+                        {% endif %}
+                    </div>
+
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon"><i data-lucide="sparkles"></i></div>
+                <h2>No hay pedidos pendientes</h2>
+                <p class="text-muted">Todos los pedidos están listos o entregados</p>
+            </div>
+            {% endif %}
+        </div>
+
+    </div><!-- /container -->
+
+    <!-- ── TOAST ── -->
+    <div class="notification-toast" id="notification">
+        <span class="notification-icon"><i data-lucide="bell"></i></span>
+        <div class="notification-text">¡Nuevo pedido en cocina!</div>
+    </div>
+
+    <audio id="alert-sound" preload="auto"></audio>
+
+    <script>
+        // ── Lucide init ──
+        lucide.createIcons();
+
+        // ── CONFIGURACIÓN ──
+        const REFRESH_INTERVAL = 5000;
+        const CHECK_INTERVAL   = 3000;
+        let currentPedidosIds  = new Set();
+        let countdown          = 5;
+        let hasUserInteracted  = false;
+        let lastNotificationTime = 0;
+        const NOTIFICATION_COOLDOWN = 2000;
+
+        // ── NOTIFICACIÓN DEL NAVEGADOR ──
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+
+        function showBrowserNotification(message, pedido) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const notification = new Notification('Nuevo Pedido en Cocina', {
+                    body: message,
+                    icon: '/static/favicon.ico',
+                    badge: '/static/favicon.ico',
+                    tag: 'cocina-pedido',
+                    requireInteraction: true,
+                    vibrate: [200, 100, 200, 100, 200]
+                });
+                notification.onclick = function() { window.focus(); notification.close(); };
+                setTimeout(() => notification.close(), 10000);
+            }
+        }
+
+        // ── SONIDO ──
+        function createAlertSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+            return function playAlert() {
+                if (!hasUserInteracted) return;
+
+                const now = Date.now();
+                if (now - lastNotificationTime < NOTIFICATION_COOLDOWN) return;
+                lastNotificationTime = now;
+
+                const duration = 0.3;
+                const volume   = 0.7;
+
+                for (let repeat = 0; repeat < 3; repeat++) {
+                    setTimeout(() => {
+                        const osc1  = audioContext.createOscillator();
+                        const gain1 = audioContext.createGain();
+                        osc1.connect(gain1);
+                        gain1.connect(audioContext.destination);
+                        osc1.type = 'square';
+                        osc1.frequency.setValueAtTime(800, audioContext.currentTime);
+                        osc1.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + duration);
+                        gain1.gain.setValueAtTime(volume, audioContext.currentTime);
+                        gain1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                        osc1.start(audioContext.currentTime);
+                        osc1.stop(audioContext.currentTime + duration);
+
+                        setTimeout(() => {
+                            const osc2  = audioContext.createOscillator();
+                            const gain2 = audioContext.createGain();
+                            osc2.connect(gain2);
+                            gain2.connect(audioContext.destination);
+                            osc2.type = 'square';
+                            osc2.frequency.setValueAtTime(1200, audioContext.currentTime);
+                            osc2.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + duration);
+                            gain2.gain.setValueAtTime(volume, audioContext.currentTime);
+                            gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                            osc2.start(audioContext.currentTime);
+                            osc2.stop(audioContext.currentTime + duration);
+                        }, duration * 1000);
+
+                    }, repeat * 700);
+                }
+
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([300, 100, 300, 100, 300, 100, 300]);
+                }
+            };
+        }
+
+        const playAlertSound = createAlertSound();
+
+        // ── INTERACCIÓN ──
+        document.addEventListener('click', () => {
+            if (!hasUserInteracted) {
+                hasUserInteracted = true;
+                showToast('Sonido de alertas activado', 'success');
+            }
+        }, { once: true });
+
+        document.addEventListener('keydown', () => {
+            if (!hasUserInteracted) hasUserInteracted = true;
+        }, { once: true });
+
+        setTimeout(requestNotificationPermission, 2000);
+
+        // ── INIT IDS ──
+        document.querySelectorAll('.pedido-card').forEach(card => {
+            currentPedidosIds.add(card.dataset.pedidoId);
+        });
+
+        // ── TOAST ──
+        function showToast(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const notificationText = notification.querySelector('.notification-text');
+
+            const colors = {
+                success: { border: '#22c55e', glow: 'rgba(34,197,94,.3)' },
+                warning: { border: '#f59e0b', glow: 'rgba(245,158,11,.3)' },
+                error:   { border: '#ef4444', glow: 'rgba(239,68,68,.3)'  },
+                info:    { border: '#3b82f6', glow: 'rgba(59,130,246,.3)' }
+            };
+
+            const c = colors[type] || colors.info;
+            notification.style.borderColor = c.border;
+            notification.style.boxShadow   = `0 8px 40px rgba(0,0,0,.6), 0 0 20px ${c.glow}`;
+            notification.querySelector('.notification-icon svg').style.stroke = c.border;
+
+            notificationText.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 5000);
+        }
+
+        // ── TIEMPOS TRANSCURRIDOS ──
+        function updateElapsedTimes() {
+            const now = Date.now() / 1000;
+            document.querySelectorAll('.tiempo-transcurrido').forEach(el => {
+                const timestamp = parseFloat(el.dataset.timestamp);
+                const minutes   = Math.floor((now - timestamp) / 60);
+                el.textContent  = `Hace ${minutes} min`;
+
+                if (minutes > 20) {
+                    el.style.color      = '#dc2626';
+                    el.style.fontWeight = '700';
+                    el.closest('.pedido-card').style.borderColor = '#dc2626';
+                } else if (minutes > 15) {
+                    el.style.color      = '#ef4444';
+                    el.style.fontWeight = '700';
+                } else if (minutes > 10) {
+                    el.style.color = '#f59e0b';
+                }
+            });
+        }
+
+        // ── VERIFICAR NUEVOS PEDIDOS ──
+        let isChecking = false;
+
+        async function checkNewPedidos() {
+            if (isChecking) return;
+            isChecking = true;
+
+            try {
+                const response = await fetch('/api/cocina/verificar_nuevos');
+                const data     = await response.json();
+
+                let hasNewPedidos  = false;
+                let newPedidosList = [];
+
+                data.pedidos.forEach(pedido => {
+                    if (!currentPedidosIds.has(pedido.id.toString())) {
+                        hasNewPedidos = true;
+                        currentPedidosIds.add(pedido.id.toString());
+                        newPedidosList.push(pedido);
+                    }
+                });
+
+                if (hasNewPedidos) {
+                    playAlertSound();
+                    const mensaje = newPedidosList.length === 1
+                        ? `Mesa ${newPedidosList[0].mesa}: ${newPedidosList[0].cantidad}x ${newPedidosList[0].producto}`
+                        : `${newPedidosList.length} nuevos pedidos en cocina`;
+
+                    showToast(mensaje, 'warning');
+                    showBrowserNotification(mensaje, newPedidosList[0]);
+                    setTimeout(() => updatePage(), 500);
+                }
+
+                if (!hasNewPedidos) {
+                    document.getElementById('total-pedidos').textContent    = data.total;
+                    document.getElementById('pendientes-count').textContent = data.pendientes;
+                    document.getElementById('preparando-count').textContent = data.preparando;
+                }
+
+            } catch (error) {
+                console.error('Error al verificar pedidos:', error);
+            } finally {
+                isChecking = false;
+            }
+        }
+
+        // ── ACTUALIZAR PÁGINA COMPLETA ──
+        async function updatePage() {
+            try {
+                const refreshStatus = document.getElementById('refresh-status');
+                refreshStatus.classList.add('updating');
+
+                const response = await fetch(window.location.href);
+                const html     = await response.text();
+                const parser   = new DOMParser();
+                const doc      = parser.parseFromString(html, 'text/html');
+
+                const newPedidosContainer = doc.querySelector('#pedidos-container');
+                const newPedidosCards     = doc.querySelectorAll('.pedido-card');
+
+                const newIds = new Set();
+                newPedidosCards.forEach(card => {
+                    const pedidoId = card.dataset.pedidoId;
+                    newIds.add(pedidoId);
+                    if (!currentPedidosIds.has(pedidoId)) card.classList.add('nuevo');
+                });
+
+                currentPedidosIds = newIds;
+
+                if (newPedidosContainer) {
+                    document.getElementById('pedidos-container').innerHTML = newPedidosContainer.innerHTML;
+                    lucide.createIcons(); // re-render icons after DOM update
+                }
+
+                document.getElementById('total-pedidos').textContent    = doc.getElementById('total-pedidos').textContent;
+                document.getElementById('pendientes-count').textContent = doc.getElementById('pendientes-count').textContent;
+                document.getElementById('preparando-count').textContent = doc.getElementById('preparando-count').textContent;
+
+                refreshStatus.classList.remove('updating');
+
+            } catch (error) {
+                console.error('Error al actualizar:', error);
+                showToast('Error al actualizar la página', 'error');
+            }
+        }
+
+        // ── CONTADOR REGRESIVO ──
+        function updateCountdown() {
+            countdown--;
+            document.getElementById('countdown').textContent = countdown;
+            if (countdown <= 0) {
+                countdown = 5;
+                updatePage();
+            }
+        }
+
+        // ── TIMERS ──
+        setInterval(checkNewPedidos,   CHECK_INTERVAL);
+        setInterval(updateCountdown,   1000);
+        setInterval(updateElapsedTimes, 30000);
+
+        updateElapsedTimes();
+        setTimeout(checkNewPedidos, 2000);
+
+        // ── VISIBILIDAD ──
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) { checkNewPedidos(); updatePage(); }
+        });
+
+        // ── MENSAJE INICIAL ──
+        setTimeout(() => {
+            if (!hasUserInteracted) {
+                showToast('Haz click para activar el sonido de alertas', 'info');
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
