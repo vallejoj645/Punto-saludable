@@ -1617,8 +1617,9 @@ def administrar_mesas():
         return redirect(url_for('administrar_mesas'))
 
     # Mostrar todas las mesas excepto Domicilios (se renderiza aparte en el HTML)
-    mesas = Mesa.query.filter(Mesa.nombre_personalizado != 'Domicilios') \
-                      .order_by(Mesa.numero.nullslast(), Mesa.nombre_personalizado).all()
+    mesas = Mesa.query.filter(
+        db.or_(Mesa.nombre_personalizado.is_(None), Mesa.nombre_personalizado != 'Domicilios')
+    ).order_by(Mesa.numero.nullslast(), Mesa.nombre_personalizado).all()
     return render_template("administrar_mesas.html", mesas=mesas)
 
 @app.route("/administrar_usuarios", methods=["GET", "POST"])
