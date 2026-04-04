@@ -667,21 +667,16 @@ def facturar_sesion(sesion_id):
         # Crear factura (sin sesion_id porque es domicilio)
         factura = Factura(
             numero_consecutivo=numero_consecutivo,
-            sesion_id=None,  # NULL para domicilios
+            sesion_id=sesion.id,  # ✅ ESTA SÍ es una sesión
             subtotal=subtotal,
             iva=iva,
             propina=propina,
             total=total,
-            metodo_pago=domicilio.metodo_pago,
-            cliente_nombre=domicilio.cliente_nombre,
-            cliente_documento="",
-            notas=notas_factura,
-            estado_pago=estado_pago,
-            fecha_vencimiento=fecha_vencimiento,
-            fecha_pago_real=datetime.now() if estado_pago == 'pagada' else None,
-            saldo_pendiente=total if estado_pago == 'pendiente' else 0,
-            fecha_emision=datetime.now()   # ← forzar fecha explícita
-            )        
+            metodo_pago=metodo_pago,  # ✅ viene del formulario
+            cliente_nombre=cliente_nombre,  # ✅ viene del formulario
+            cliente_documento=cliente_documento,
+            notas=notas,       
+        )
         # Actualizar sesión
         sesion.total = total
         sesion.activa = False
