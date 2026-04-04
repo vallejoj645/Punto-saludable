@@ -10,6 +10,37 @@ from dotenv import load_dotenv
 import sys
 import logging
 
+# =========================
+# ZONA HORARIA COLOMBIA
+# =========================
+try:
+    from zoneinfo import ZoneInfo
+    BOGOTA_TZ = ZoneInfo('America/Bogota')
+except ImportError:
+    # Python < 3.9 — fallback con offset fijo UTC-5
+    from datetime import timezone
+    BOGOTA_TZ = timezone(timedelta(hours=-5))
+
+def now_co():
+    """
+    Retorna la hora actual de Colombia (UTC-5) como datetime naive
+    (sin tzinfo) para que sea compatible con las columnas DateTime de la BD.
+    Reemplaza now_co() en toda la app para evitar desfases horarios.
+    """
+    return datetime.now(BOGOTA_TZ).replace(tzinfo=None)
+
+def ts_utc(naive_co_dt):
+    """
+    Convierte un datetime naive almacenado en hora colombiana
+    a Unix timestamp UTC correcto para enviar al frontend JS.
+    JS usa Date.now()/1000 (UTC), así que ambos deben ser UTC para
+    que el cálculo de tiempo transcurrido sea exacto.
+    """
+    if naive_co_dt is None:
+        return None
+    aware = naive_co_dt.replace(tzinfo=BOGOTA_TZ)
+    return aware.timestamp()
+
 # Configurar logging detallado
 logging.basicConfig(
     level=logging.INFO,
@@ -84,7 +115,7 @@ class Mesa(db.Model):
 class Sesion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     mesa_id = db.Column(db.Integer, db.ForeignKey('mesa.id'), nullable=False)
-    fecha_inicio = db.Column(db.DateTime, default=datetime.now)
+    fecha_inicio = db.Column(db.DateTime, default=now_co)
     fecha_fin = db.Column(db.DateTime, nullable=True)
     total = db.Column(db.Float, default=0)  # NUEVO CAMPO para guardar el total
     activa = db.Column(db.Boolean, default=True)
@@ -94,7 +125,7 @@ class Sesion(db.Model):
 
 class Pedido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    fecha = db.Column(db.DateTime, default=datetime.now)
+    fecha = db.Column(db.DateTime, default=now_co)
     mesa_id = db.Column(db.Integer, db.ForeignKey('mesa.id'), nullable=False)
     sesion_id = db.Column(db.Integer, db.ForeignKey('sesion.id'), nullable=True)
     mesero_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
@@ -105,7 +136,7 @@ class Pedido(db.Model):
     estado = db.Column(db.String(20), default='pendiente')  # pendiente, preparando, listo, entregado
     pagado = db.Column(db.Boolean, default=False)
     # Timestamp cuando se actualizó el estado por última vez
-    estado_actualizado = db.Column(db.DateTime, default=datetime.now)
+    estado_actualizado = db.Column(db.DateTime, default=now_co)
     
     mesa = db.relationship('Mesa', backref='pedidos')
     mesero = db.relationship('Usuario', backref='pedidos')
@@ -159,7 +190,7 @@ class Factura(db.Model):
     fecha_vencimiento = db.Column(db.Date, nullable=True)  # Cuándo debe pagar el cliente
     fecha_pago_real = db.Column(db.DateTime, nullable=True)  # Cuándo pagó realmente
     saldo_pendiente = db.Column(db.Float, default=0)  # Si pagó parcialmente
-    fecha_emision = db.Column(db.DateTime, default=datetime.now)
+    fecha_emision = db.Column(db.DateTime, default=now_co)
     
     sesion = db.relationship('Sesion', backref='facturas')
 
@@ -190,7 +221,7 @@ class Presupuesto(db.Model):
     mes = db.Column(db.Integer, nullable=True)  # 1-12 para identificar el mes
     anio = db.Column(db.Integer, nullable=True)  # 2026, 2027, etc.
     activo = db.Column(db.Boolean, default=True)
-    fecha_creacion = db.Column(db.DateTime, default=datetime.now)
+    fecha_creacion = db.Column(db.DateTime, default=now_co)
     
     # Alertas
     alerta_porcentaje = db.Column(db.Integer, default=80)  # Alertar al 80%
@@ -278,7 +309,7 @@ class Proveedor(db.Model):
     direccion = db.Column(db.String(300))
     notas = db.Column(db.Text)
     activo = db.Column(db.Boolean, default=True)
-    fecha_registro = db.Column(db.DateTime, default=datetime.now)
+    fecha_registro = db.Column(db.DateTime, default=now_co)
     
     # Relación: Un proveedor puede tener muchos gastos
     gastos = db.relationship('Gasto', backref='proveedor', lazy='select')
@@ -288,7 +319,7 @@ class Gasto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     # Información básica del gasto (YA EXISTE)
-    fecha = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    fecha = db.Column(db.DateTime, default=now_co, nullable=False)
     concepto = db.Column(db.String(300), nullable=False)
     monto = db.Column(db.Float, nullable=False)
     
@@ -326,7 +357,7 @@ class ConsumoInterno(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('item_menu.id'), nullable=False)
     cantidad = db.Column(db.Integer, default=1)
     costo = db.Column(db.Float, default=0.0)  # Costo para el dueño por unidad
-    fecha = db.Column(db.DateTime, default=datetime.now)
+    fecha = db.Column(db.DateTime, default=now_co)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     notas = db.Column(db.Text)
 
@@ -368,7 +399,7 @@ class Domicilio(db.Model):
     # =================================================================
     # INFORMACIÓN DEL PEDIDO (fechas y tiempos)
     # =================================================================
-    fecha_pedido = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    fecha_pedido = db.Column(db.DateTime, default=now_co, nullable=False)
     fecha_entrega_estimada = db.Column(db.DateTime)                  # Opcional
     fecha_entrega_real = db.Column(db.DateTime)                      # Cuando se entrega
     
@@ -416,7 +447,7 @@ class Domicilio(db.Model):
     # =================================================================
     # TIMESTAMPS (control de tiempos)
     # =================================================================
-    estado_actualizado = db.Column(db.DateTime, default=datetime.now)
+    estado_actualizado = db.Column(db.DateTime, default=now_co)
     
     # =================================================================
     # RELACIONES (conexiones con otras tablas)
@@ -462,7 +493,7 @@ class Domicilio(db.Model):
         Calcula cuánto tiempo ha pasado desde que se tomó el pedido
         Retorna string legible: "15 min" o "1h 30min"
         """
-        delta = datetime.now() - self.fecha_pedido
+        delta = now_co() - self.fecha_pedido
         minutos = int(delta.total_seconds() / 60)
         if minutos < 60:
             return f"{minutos} min"
@@ -480,7 +511,7 @@ class Domicilio(db.Model):
         if self.estado in [EstadoDomicilio.ENTREGADO, EstadoDomicilio.CANCELADO]:
             return False
         
-        delta = datetime.now() - self.fecha_pedido
+        delta = now_co() - self.fecha_pedido
         minutos = int(delta.total_seconds() / 60)
         
         # Alertar si lleva más de 45 minutos y no ha sido entregado
@@ -557,7 +588,7 @@ class Repartidor(db.Model):
     placa_vehiculo = db.Column(db.String(20))
     tipo_vehiculo = db.Column(db.String(50))  # moto, bicicleta, carro
     activo = db.Column(db.Boolean, default=True)
-    fecha_registro = db.Column(db.DateTime, default=datetime.now)
+    fecha_registro = db.Column(db.DateTime, default=now_co)
     
     # Estadísticas
     total_domicilios = db.Column(db.Integer, default=0)
@@ -652,7 +683,7 @@ def facturar_sesion(sesion_id):
             fecha_vencimiento = datetime.strptime(fecha_vencimiento_str, '%Y-%m-%d').date()
         
         # Fecha de pago real
-        fecha_pago_real = datetime.now() if estado_pago == 'pagada' else None
+        fecha_pago_real = now_co() if estado_pago == 'pagada' else None
         
         # Saldo pendiente
         saldo_pendiente = total if estado_pago == 'pendiente' else 0
@@ -679,7 +710,7 @@ def facturar_sesion(sesion_id):
         # Actualizar sesión
         sesion.total = total
         sesion.activa = False
-        sesion.fecha_fin = datetime.now()
+        sesion.fecha_fin = now_co()
         
         # Marcar todos los pedidos como pagados (actualización en bloque)
         db.session.query(Pedido).filter(Pedido.sesion_id == sesion.id).update({"pagado": True, "estado": "entregado"}, synchronize_session=False)
@@ -917,7 +948,7 @@ def editar_factura(factura_id):
 
         # Ajustes según estado de pago
         if estado_pago == 'pagada':
-            factura.fecha_pago_real = datetime.now()
+            factura.fecha_pago_real = now_co()
             factura.saldo_pendiente = 0
         elif estado_pago == 'pendiente':
             factura.fecha_pago_real = None
@@ -1086,7 +1117,7 @@ def marcar_factura_pagada(factura_id):
         # Pago completo
         factura.estado_pago = 'pagada'
         factura.saldo_pendiente = 0
-        factura.fecha_pago_real = datetime.now()
+        factura.fecha_pago_real = now_co()
         flash(f'Factura {factura.numero_consecutivo} marcada como pagada completamente', 'success')
     else:
         # Pago parcial
@@ -1132,7 +1163,7 @@ def configuracion_restaurante():
         flash('Configuración actualizada exitosamente', 'success')
         return redirect(url_for('configuracion_restaurante'))
     
-    return render_template("configuracion_restaurante.html", config=config, now=datetime.now())
+    return render_template("configuracion_restaurante.html", config=config, now=now_co())
 
 # Actualizar la función init_db() para incluir la configuración inicial
 def init_db_facturacion():
@@ -1187,7 +1218,7 @@ def dashboard():
     mesas = Mesa.query.filter_by(activa=True).order_by(Mesa.numero).all()
     
     # Obtener solo sesiones activas de hoy
-    hoy = datetime.now().date()
+    hoy = now_co().date()
     sesiones_activas = Sesion.query.filter(
         Sesion.activa == True,
         db.func.date(Sesion.fecha_inicio) == hoy
@@ -1226,7 +1257,7 @@ def dashboard():
     return render_template("dashboard.html", 
                          mesas=mesas, 
                          info_mesas=info_mesas,
-                         now=datetime.now())
+                         now=now_co())
 
 @app.route("/nuevo_pedido/<int:mesa_id>", methods=["GET", "POST"])
 @login_required
@@ -1310,7 +1341,7 @@ def ver_mesa(mesa_id):
                 totales_sesion_activa['total_pendiente'] += subtotal
     
     # Obtener sesiones anteriores de hoy con sus totales calculados
-    hoy = datetime.now().date()
+    hoy = now_co().date()
     sesiones_anteriores = Sesion.query.filter(
         Sesion.mesa_id == mesa_id,
         Sesion.activa == False,
@@ -1351,7 +1382,7 @@ def ver_mesa(mesa_id):
 @app.route("/cocina")
 @login_required
 def cocina():
-    hoy = datetime.now().date()
+    hoy = now_co().date()
     
     pedidos_pendientes = Pedido.query.filter(
         db.func.date(Pedido.fecha) == hoy,
@@ -1361,13 +1392,13 @@ def cocina():
     return render_template(
         "cocina.html",
         pedidos=pedidos_pendientes,
-        now=datetime.now()
+        now=now_co()
     )
 
 @app.route("/api/cocina/pedidos")
 @login_required
 def api_cocina_pedidos():
-    hoy = datetime.now().date()
+    hoy = now_co().date()
     
     pedidos = Pedido.query.filter(
         db.func.date(Pedido.fecha) == hoy,
@@ -1398,7 +1429,7 @@ def actualizar_estado(pedido_id, estado):
     if estado in estados_validos:
         pedido.estado = estado
         try:
-            pedido.estado_actualizado = datetime.now()
+            pedido.estado_actualizado = now_co()
         except Exception:
             # En caso de que la columna no exista en DB todavía
             pass
@@ -1431,9 +1462,9 @@ def notificaciones_pendientes():
 
     since = request.args.get('since')
     try:
-        since_dt = datetime.fromisoformat(since) if since else (datetime.now() - timedelta(seconds=10))
+        since_dt = datetime.fromisoformat(since) if since else (now_co() - timedelta(seconds=10))
     except Exception:
-        since_dt = datetime.now() - timedelta(seconds=10)
+        since_dt = now_co() - timedelta(seconds=10)
 
     pedidos = Pedido.query.filter(
         Pedido.estado == 'listo',
@@ -1455,7 +1486,7 @@ def notificaciones_pendientes():
 @app.route("/pagar_mesa/<int:mesa_id>")
 @login_required
 def pagar_mesa(mesa_id):
-    hoy = datetime.now().date()
+    hoy = now_co().date()
     pedidos = Pedido.query.filter(
         Pedido.mesa_id == mesa_id,
         db.func.date(Pedido.fecha) == hoy,
@@ -1541,7 +1572,7 @@ def historial():
                          sesiones_por_dia=sesiones_por_dia,
                          totales_por_dia=totales_por_dia,
                          fecha_seleccionada=fecha_seleccionada,
-                         now=datetime.now())
+                         now=now_co())
 
 @app.route("/administrar_mesas", methods=["GET", "POST"])
 @login_required
@@ -1625,7 +1656,7 @@ def verificar_nuevos_pedidos():
     """
     RAZÓN: Endpoint ligero para verificar nuevos pedidos sin recargar toda la página
     """
-    hoy = datetime.now().date()
+    hoy = now_co().date()
     
     # Solo pedidos pendientes y preparando
     pedidos = Pedido.query.filter(
@@ -1642,7 +1673,7 @@ def verificar_nuevos_pedidos():
                 'producto': p.producto,
                 'cantidad': p.cantidad,
                 'estado': p.estado,
-                'timestamp': p.fecha.timestamp()
+                'timestamp': ts_utc(p.fecha)   # UTC timestamp correcto para JS Date.now()
             }
             for p in pedidos
         ],
@@ -1688,7 +1719,7 @@ def liberar_mesa(mesa_id):
         
         # Cerrar sesión
         sesion_activa.activa = False
-        sesion_activa.fecha_fin = datetime.now()
+        sesion_activa.fecha_fin = now_co()
         
         db.session.commit()
         flash(f'Mesa {mesa_id} liberada exitosamente', 'success')
@@ -1963,7 +1994,7 @@ def nuevo_gasto():
             if fecha_str:
                 fecha = datetime.strptime(fecha_str, '%Y-%m-%dT%H:%M')
             else:
-                fecha = datetime.now()
+                fecha = now_co()
             
             # Convertir fecha de vencimiento
             fecha_vencimiento = None
@@ -1971,7 +2002,7 @@ def nuevo_gasto():
                 fecha_vencimiento = datetime.strptime(fecha_vencimiento_str, '%Y-%m-%d').date()
             
             # Si está pagado, la fecha de pago es ahora
-            fecha_pago_real = datetime.now() if estado_pago == 'pagado' else None
+            fecha_pago_real = now_co() if estado_pago == 'pagado' else None
             
             # Crear gasto
             gasto = Gasto(
@@ -2010,7 +2041,7 @@ def nuevo_gasto():
     return render_template("gastos/nuevo_gasto.html",
                          categorias=categorias,
                          proveedores=proveedores,
-                         now=datetime.now())
+                         now=now_co())
 
 
 # Función auxiliar para verificar presupuestos
@@ -2020,8 +2051,8 @@ def verificar_presupuesto(categoria_id):
     y genera alertas en flash messages.
     """
     from datetime import datetime
-    mes_actual = datetime.now().month
-    anio_actual = datetime.now().year
+    mes_actual = now_co().month
+    anio_actual = now_co().year
     
     presupuesto = Presupuesto.query.filter_by(
         categoria_id=categoria_id,
@@ -2196,7 +2227,7 @@ def marcar_gasto_pagado(gasto_id):
     gasto = Gasto.query.get_or_404(gasto_id)
     
     gasto.estado_pago = 'pagado'
-    gasto.fecha_pago_real = datetime.now()
+    gasto.fecha_pago_real = now_co()
     
     db.session.commit()
     
@@ -2317,12 +2348,12 @@ def reporte_financiero():
     
     if not fecha_inicio:
         # Primer día del mes actual
-        hoy = datetime.now()
+        hoy = now_co()
         fecha_inicio = hoy.replace(day=1).strftime('%Y-%m-%d')
     
     if not fecha_fin:
         # Hoy
-        fecha_fin = datetime.now().strftime('%Y-%m-%d')
+        fecha_fin = now_co().strftime('%Y-%m-%d')
     
     # Convertir a objetos datetime
     # IMPORTANTE: Definimos el inicio del día a las 03:00 (cierre a partir de las 03:00)
@@ -2421,7 +2452,7 @@ def reporte_financiero():
                          gastos_por_categoria=gastos_por_categoria,  # Para JSON/gráficos
                          gastos_por_categoria_tabla=gastos_por_categoria_tabla,  # Para tabla HTML
                          evolucion_diaria=evolucion_diaria,
-                         now=datetime.now())
+                         now=now_co())
 # =========================
 # INICIALIZACIÓN
 # =========================
@@ -2493,8 +2524,8 @@ def lista_presupuestos():
     
     # Obtener mes y año actual
     from datetime import datetime
-    mes_actual = datetime.now().month
-    anio_actual = datetime.now().year
+    mes_actual = now_co().month
+    anio_actual = now_co().year
     
     # Obtener presupuestos del mes actual
     presupuestos = Presupuesto.query.filter_by(
@@ -2576,8 +2607,8 @@ def nuevo_presupuesto():
     categorias = CategoriaGasto.query.filter_by(activa=True).order_by(CategoriaGasto.nombre).all()
     
     from datetime import datetime
-    mes_actual = datetime.now().month
-    anio_actual = datetime.now().year
+    mes_actual = now_co().month
+    anio_actual = now_co().year
     
     return render_template("presupuestos/nuevo_presupuesto.html",
                          categorias=categorias,
@@ -2641,11 +2672,11 @@ def copiar_presupuestos_mes_siguiente():
     from datetime import datetime
     from dateutil.relativedelta import relativedelta
     
-    mes_actual = datetime.now().month
-    anio_actual = datetime.now().year
+    mes_actual = now_co().month
+    anio_actual = now_co().year
     
     # Calcular mes siguiente
-    fecha_siguiente = datetime.now() + relativedelta(months=1)
+    fecha_siguiente = now_co() + relativedelta(months=1)
     mes_siguiente = fecha_siguiente.month
     anio_siguiente = fecha_siguiente.year
     
@@ -2721,9 +2752,9 @@ def lista_domicilios():
             flash('Fecha inválida', 'error')
     else:
         # Por defecto, mostrar domicilios del día actual
-        hoy = datetime.now().date()
+        hoy = now_co().date()
         inicio = datetime(hoy.year, hoy.month, hoy.day, 3, 0, 0)
-        if datetime.now().hour < 3:
+        if now_co().hour < 3:
             inicio = inicio - timedelta(days=1)
         fin = inicio + timedelta(days=1)
         query = query.filter(Domicilio.fecha_pedido >= inicio, Domicilio.fecha_pedido < fin)
@@ -2749,7 +2780,7 @@ def lista_domicilios():
                          total_ventas=total_ventas,
                          estado_filtro=estado,
                          fecha_filtro=fecha,
-                         now=datetime.now())
+                         now=now_co())
 
 # =========================
 # AGREGAR ESTA RUTA EN app.py
@@ -2777,7 +2808,7 @@ def ver_domicilio(domicilio_id):
                          domicilio=domicilio,
                          repartidores=repartidores,
                          zonas=zonas,
-                         now=datetime.now())
+                         now=now_co())
 
 
 @app.route("/domicilio/nuevo", methods=["GET", "POST"])
@@ -2868,7 +2899,7 @@ def nuevo_domicilio():
                          items_menu=items_menu,
                          zonas=zonas,
                          usuarios=usuarios,
-                         now=datetime.now())
+                         now=now_co())
 
 
 # =========================
@@ -2898,7 +2929,7 @@ def actualizar_estado_item_domicilio(item_id):
         todos_listos = all(i.estado_cocina == 'listo' for i in item.domicilio.items)
         if todos_listos and item.domicilio.estado == 'preparando':
             item.domicilio.estado = EstadoDomicilio.LISTO
-            item.domicilio.estado_actualizado = datetime.now()
+            item.domicilio.estado_actualizado = now_co()
             db.session.commit()
             flash(f'Domicilio #{item.domicilio_id} marcado como LISTO para enviar', 'success')
     
@@ -2930,11 +2961,11 @@ def actualizar_estado_domicilio(domicilio_id):
         return redirect(url_for('ver_domicilio', domicilio_id=domicilio_id))
     
     domicilio.estado = nuevo_estado
-    domicilio.estado_actualizado = datetime.now()
+    domicilio.estado_actualizado = now_co()
     
     # Si se marca como entregado, guardar la hora de entrega
     if nuevo_estado == EstadoDomicilio.ENTREGADO:
-        domicilio.fecha_entrega_real = datetime.now()
+        domicilio.fecha_entrega_real = now_co()
         domicilio.pagado = True
     
     # Si se asigna repartidor
@@ -3017,7 +3048,7 @@ def cancelar_domicilio(domicilio_id):
     
     domicilio.estado = EstadoDomicilio.CANCELADO
     domicilio.notas_cancelacion = motivo
-    domicilio.estado_actualizado = datetime.now()
+    domicilio.estado_actualizado = now_co()
     
     db.session.commit()
     
@@ -3086,7 +3117,7 @@ def facturar_domicilio(domicilio_id):
                 notas=notas_factura,
                 estado_pago=estado_pago,
                 fecha_vencimiento=fecha_vencimiento,
-                fecha_pago_real=datetime.now() if estado_pago == 'pagada' else None,
+                fecha_pago_real=now_co() if estado_pago == 'pagada' else None,
                 saldo_pendiente=total if estado_pago == 'pendiente' else 0
             )
             
@@ -3108,7 +3139,7 @@ def facturar_domicilio(domicilio_id):
             return redirect(url_for('facturar_domicilio', domicilio_id=domicilio_id))
     
     # GET: Calcular fecha de vencimiento por defecto (15 días)
-    fecha_vencimiento_default = (datetime.now() + timedelta(days=15)).strftime('%Y-%m-%d')
+    fecha_vencimiento_default = (now_co() + timedelta(days=15)).strftime('%Y-%m-%d')
     
     return render_template("domicilios/facturar_domicilio.html",
                          domicilio=domicilio,
@@ -3130,9 +3161,9 @@ def cocina_domicilios():
         return redirect(url_for('dashboard'))
     
     # Obtener domicilios activos del día
-    hoy = datetime.now().date()
+    hoy = now_co().date()
     inicio = datetime(hoy.year, hoy.month, hoy.day, 3, 0, 0)
-    if datetime.now().hour < 3:
+    if now_co().hour < 3:
         inicio = inicio - timedelta(days=1)
     fin = inicio + timedelta(days=1)
     
@@ -3148,7 +3179,7 @@ def cocina_domicilios():
     
     return render_template("domicilios/cocina_domicilios.html",
                          domicilios=domicilios_activos,
-                         now=datetime.now())
+                         now=now_co())
 
 
 # =========================
@@ -3250,9 +3281,9 @@ def api_domicilios_activos():
     RAZÓN: Endpoint para actualizar en tiempo real los domicilios activos.
     Para pantalla de cocina o repartidores.
     """
-    hoy = datetime.now().date()
+    hoy = now_co().date()
     inicio = datetime(hoy.year, hoy.month, hoy.day, 3, 0, 0)
-    if datetime.now().hour < 3:
+    if now_co().hour < 3:
         inicio = inicio - timedelta(days=1)
     fin = inicio + timedelta(days=1)
     domicilios = Domicilio.query.filter(
