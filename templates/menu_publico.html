@@ -103,11 +103,48 @@
         .item-card.no-disponible { opacity:.4; pointer-events:none; }
         .item-card.en-carrito { border-color:var(--green); box-shadow:0 0 0 1px var(--green), 0 8px 24px var(--green-glow); }
 
+        /* ─── IMAGEN con skeleton loader ─── */
         .item-imagen-wrap { width:100%; height:165px; position:relative; overflow:hidden; background:#151515; flex-shrink:0; }
-        .item-imagen-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
-        .item-imagen-placeholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#141414,#1c1c1c); }
+
+        /* Skeleton animado mientras carga */
+        .item-imagen-wrap::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(90deg, #151515 25%, #1e1e1e 50%, #151515 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            z-index: 1;
+            transition: opacity .3s;
+        }
+        .item-imagen-wrap.loaded::before { opacity: 0; pointer-events: none; }
+
+        @keyframes shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .item-imagen-wrap img {
+            width:100%; height:100%; object-fit:cover; display:block;
+            position: relative; z-index: 2;
+            opacity: 0; transition: opacity .4s ease;
+        }
+        .item-imagen-wrap.loaded img { opacity: 1; }
+
+        /* Placeholder cuando no hay imagen o falló la carga */
+        .item-imagen-placeholder {
+            width:100%; height:100%;
+            display:flex; align-items:center; justify-content:center;
+            background:linear-gradient(135deg,#141414,#1c1c1c);
+            position: absolute; inset: 0; z-index: 2;
+        }
         .item-imagen-placeholder svg { stroke:#2a2a2a; width:44px; height:44px; }
-        .no-disponible-badge { position:absolute; top:.75rem; right:.75rem; background:var(--red); color:white; padding:.25rem .7rem; border-radius:.4rem; font-size:.72rem; font-weight:700; text-transform:uppercase; }
+        /* Solo mostrar placeholder si está activo */
+        .item-imagen-placeholder { display: none; }
+        .item-imagen-wrap.show-placeholder .item-imagen-placeholder { display: flex; }
+        .item-imagen-wrap.show-placeholder img { display: none; }
+        .item-imagen-wrap.show-placeholder::before { display: none; }
+
+        .no-disponible-badge { position:absolute; top:.75rem; right:.75rem; background:var(--red); color:white; padding:.25rem .7rem; border-radius:.4rem; font-size:.72rem; font-weight:700; text-transform:uppercase; z-index: 3; }
 
         .item-body { padding:1.1rem; display:flex; flex-direction:column; flex:1; }
         .item-nombre { font-size:1.02rem; font-weight:700; margin-bottom:.35rem; line-height:1.3; }
@@ -270,12 +307,24 @@
                              data-nombre="{{ item.nombre }}"
                              data-precio="{{ item.precio|int }}">
 
-                            <div class="item-imagen-wrap">
+                            <div class="item-imagen-wrap {% if not item.imagen_url %}show-placeholder{% endif %}"
+                                 id="img-wrap-{{ item.id }}">
+
                                 {% if item.imagen_url %}
-                                <img src="{{ item.imagen_url }}" alt="{{ item.nombre }}">
-                                {% else %}
-                                <div class="item-imagen-placeholder"><i data-lucide="image"></i></div>
+                                {#
+                                    La URL se convierte a formato directo en el JS (resolverImagenDrive).
+                                    Aquí pasamos la URL original como data-src para que JS la procese.
+                                #}
+                                <img data-src="{{ item.imagen_url }}"
+                                     alt="{{ item.nombre }}"
+                                     id="img-{{ item.id }}"
+                                     loading="lazy">
                                 {% endif %}
+
+                                <div class="item-imagen-placeholder">
+                                    <i data-lucide="image"></i>
+                                </div>
+
                                 {% if not item.disponible %}
                                 <span class="no-disponible-badge">No disponible</span>
                                 {% endif %}
@@ -380,6 +429,85 @@
     <script>
         lucide.createIcons();
 
+        // ═══════════════════════════════════════════════════════
+        // GOOGLE DRIVE IMAGE RESOLVER
+        // Convierte cualquier link de Drive al formato embebible.
+        //
+        // Formatos que acepta:
+        //   https://drive.google.com/file/d/ID/view?usp=sharing
+        //   https://drive.google.com/open?id=ID
+        //   https://drive.google.com/uc?id=ID
+        //   https://lh3.googleusercontent.com/d/ID   (ya correcto)
+        //   Cualquier otra URL (se devuelve sin cambios)
+        // ═══════════════════════════════════════════════════════
+        function resolverImagenDrive(url) {
+            if (!url) return null;
+
+            // Ya está en formato directo de lh3
+            if (url.includes('lh3.googleusercontent.com')) return url;
+
+            let id = null;
+
+            // Formato: /file/d/ID/view
+            const matchFile = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (matchFile) id = matchFile[1];
+
+            // Formato: ?id=ID  o  &id=ID
+            if (!id) {
+                const matchId = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                if (matchId) id = matchId[1];
+            }
+
+            if (id) {
+                // Formato de thumbnail directo — funciona sin autenticación
+                // siempre que el archivo esté compartido como "Cualquier persona con el enlace"
+                return `https://lh3.googleusercontent.com/d/${id}`;
+            }
+
+            // No es un link de Drive conocido → devolver tal cual
+            return url;
+        }
+
+        // ═══════════════════════════════════════════════
+        // CARGA DE IMÁGENES con conversión Drive + fallback
+        // ═══════════════════════════════════════════════
+        function cargarImagenes() {
+            document.querySelectorAll('img[data-src]').forEach(img => {
+                const wrap   = img.closest('.item-imagen-wrap');
+                const rawUrl = img.dataset.src;
+                const url    = resolverImagenDrive(rawUrl);
+
+                if (!url) {
+                    wrap.classList.add('show-placeholder');
+                    return;
+                }
+
+                img.src = url;
+
+                img.onload = () => {
+                    wrap.classList.add('loaded');
+                };
+
+                img.onerror = () => {
+                    // Si falla lh3, intentar con el proxy uc de Drive como respaldo
+                    const id = url.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1];
+                    if (id && !img.dataset.retried) {
+                        img.dataset.retried = '1';
+                        img.src = `https://drive.google.com/uc?export=view&id=${id}`;
+                    } else {
+                        // Ningún formato funcionó → mostrar placeholder
+                        wrap.classList.add('show-placeholder');
+                    }
+                };
+            });
+        }
+
+        // Cargar imágenes al iniciar
+        document.addEventListener('DOMContentLoaded', cargarImagenes);
+
+        // ═══════════════════════════════
+        // CARRITO
+        // ═══════════════════════════════
         const carrito = {};
 
         function cambiarCantidad(itemId, delta) {
