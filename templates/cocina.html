@@ -714,29 +714,25 @@
 
         <!-- ── PEDIDOS GRID ── -->
         <div id="pedidos-container">
-            {% if pedidos %}
+            {% if pedidos_por_mesa %}
             <div class="pedidos-grid" id="pedidos-grid">
+        
                 {% for grupo in pedidos_por_mesa %}
-                <div class="pedido-card estado-{{ pedido.estado }}" data-pedido-id="{{ pedido.id }}">
-
+                <div class="pedido-card">
+        
+                    <!-- HEADER DE LA MESA -->
                     <div class="pedido-header">
                         <div class="pedido-mesa">Mesa {{ grupo.mesa.numero }}</div>
-                        <div class="pedido-tiempo">
-                            <div class="tiempo-hora">
-                                <i data-lucide="clock"></i>
-                                {{ pedido.fecha.strftime('%H:%M') }}
-                            </div>
-                            <div class="tiempo-transcurrido" data-timestamp="{{ pedido.fecha.timestamp() }}">
-                                Hace {{ ((now - pedido.fecha).total_seconds() / 60)|int }} min
-                            </div>
-                        </div>
                     </div>
-
+        
+                    <!-- 🔥 LOOP DE PEDIDOS (CLAVE) -->
+                    {% for pedido in grupo.pedidos %}
+        
                     <div class="pedido-producto">
                         <span class="pedido-cantidad">{{ pedido.cantidad }}</span>
                         {{ pedido.producto }}
                     </div>
-
+        
                     {% if pedido.notas %}
                     <div class="pedido-notas">
                         <div class="pedido-notas-header">
@@ -745,7 +741,7 @@
                         <p>{{ pedido.notas }}</p>
                     </div>
                     {% endif %}
-
+        
                     <div class="pedido-info">
                         <div class="pedido-mesero">
                             <i data-lucide="user"></i>
@@ -759,7 +755,7 @@
                             {% endif %}
                         </span>
                     </div>
-
+        
                     <div class="pedido-actions">
                         {% if pedido.estado == 'pendiente' %}
                         <a href="{{ url_for('actualizar_estado', pedido_id=pedido.id, estado='preparando') }}"
@@ -773,9 +769,14 @@
                         </a>
                         {% endif %}
                     </div>
-
+        
+                    <hr style="margin: 10px 0; border-color: #252525;">
+        
+                    {% endfor %}
+        
                 </div>
                 {% endfor %}
+        
             </div>
             {% else %}
             <div class="empty-state">
@@ -785,7 +786,6 @@
             </div>
             {% endif %}
         </div>
-
     </div><!-- /container -->
 
     <!-- ── TOAST ── -->
