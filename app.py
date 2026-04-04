@@ -1357,14 +1357,28 @@ def ver_mesa(mesa_id):
 def cocina():
     hoy = datetime.now().date()
     
-    pedidos_pendientes = Pedido.query.filter(
+    pedidos = Pedido.query.filter(
         db.func.date(Pedido.fecha) == hoy,
         Pedido.estado.in_(['pendiente', 'preparando'])
     ).order_by(Pedido.fecha).all()
-    
+
+    # 🔥 AGRUPAR POR MESA
+    pedidos_por_mesa = {}
+
+    for p in pedidos:
+        mesa_id = p.mesa_id
+
+        if mesa_id not in pedidos_por_mesa:
+            pedidos_por_mesa[mesa_id] = {
+                "mesa": p.mesa,
+                "pedidos": []
+            }
+
+        pedidos_por_mesa[mesa_id]["pedidos"].append(p)
+
     return render_template(
         "cocina.html",
-        pedidos=pedidos_pendientes,
+        pedidos_por_mesa=pedidos_por_mesa.values(),
         now=datetime.now()
     )
 
