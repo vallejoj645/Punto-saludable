@@ -716,11 +716,11 @@
         <div id="pedidos-container">
             {% if pedidos %}
             <div class="pedidos-grid" id="pedidos-grid">
-                {% for pedido in pedidos %}
+                {% for grupo in pedidos_por_mesa %}
                 <div class="pedido-card estado-{{ pedido.estado }}" data-pedido-id="{{ pedido.id }}">
 
                     <div class="pedido-header">
-                        <div class="pedido-mesa">Mesa {{ pedido.mesa.numero }}</div>
+                        <div class="pedido-mesa">Mesa {{ grupo.mesa.numero }}</div>
                         <div class="pedido-tiempo">
                             <div class="tiempo-hora">
                                 <i data-lucide="clock"></i>
