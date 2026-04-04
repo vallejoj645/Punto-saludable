@@ -108,8 +108,7 @@ class Usuario(UserMixin, db.Model):
 
 class Mesa(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    numero = db.Column(db.Integer, nullable=True, unique=True)
-    nombre_personalizado = db.Column(db.String(40), nullable=True)
+    numero = db.Column(db.Integer, nullable=Flase, unique=True)
     capacidad = db.Column(db.Integer, default=4)
     activa = db.Column(db.Boolean, default=True)
 
