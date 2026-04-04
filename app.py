@@ -3371,3 +3371,74 @@ else:
         except Exception as e:
             print(f"⚠️ Error en inicialización: {e}")
             # No hacer rollback aquí, dejar que la app arranque de todos modos
+
+# =========================
+# RUTA: PEDIDO PÚBLICO DESDE MENÚ
+# =========================
+@app.route('/api/pedido_publico', methods=['POST'])
+def pedido_publico():
+    """
+    Recibe pedidos del menú público (sin login).
+    Crea los pedidos en la BD asociados a la mesa indicada.
+    """
+    try:
+        data  = request.get_json()
+        items = data.get('items', [])
+        mesa_num = data.get('mesa')
+        notas_generales = data.get('notas', '')
+
+        if not items or not mesa_num:
+            return jsonify({'success': False, 'error': 'Faltan datos del pedido'}), 400
+
+        # Buscar la mesa
+        mesa = Mesa.query.filter_by(numero=int(mesa_num)).first()
+        if not mesa:
+            return jsonify({'success': False, 'error': f'La mesa {mesa_num} no existe'}), 404
+
+        # Obtener o crear una sesión activa para la mesa
+        sesion = Sesion.query.filter_by(mesa_id=mesa.id, activa=True).first()
+        if not sesion:
+            sesion = Sesion(mesa_id=mesa.id)
+            db.session.add(sesion)
+            db.session.flush()  # obtener id sin commit aún
+
+        # Buscar o crear usuario "sistema" para pedidos del menú público
+        usuario_sistema = Usuario.query.filter_by(username='menu_publico').first()
+        if not usuario_sistema:
+            usuario_sistema = Usuario(
+                username='menu_publico',
+                nombre='Menú Digital',
+                rol='mesero'
+            )
+            usuario_sistema.set_password(os.urandom(24).hex())
+            db.session.add(usuario_sistema)
+            db.session.flush()
+
+        # Crear un pedido por cada ítem
+        for item in items:
+            nombre   = item.get('nombre', '').strip()
+            cantidad = int(item.get('cantidad', 1))
+            precio   = float(item.get('precio', 0))
+
+            if not nombre or cantidad < 1:
+                continue
+
+            pedido = Pedido(
+                mesa_id=mesa.id,
+                sesion_id=sesion.id,
+                mesero_id=usuario_sistema.id,
+                producto=nombre,
+                cantidad=cantidad,
+                precio_unitario=precio,
+                notas=notas_generales,
+                estado='pendiente'
+            )
+            db.session.add(pedido)
+
+        db.session.commit()
+        return jsonify({'success': True, 'mesa': mesa_num})
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error en pedido_publico: {e}')
+        return jsonify({'success': False, 'error': 'Error interno del servidor'}), 500
