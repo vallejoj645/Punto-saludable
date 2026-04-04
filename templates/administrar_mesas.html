@@ -268,10 +268,10 @@
 
                 <!-- Panel: número domiciliario -->
                 <div class="panel">
-                    <h3>Número del domiciliario</h3>
+                    <h3>📱 Número del domiciliario</h3>
                     <div class="phone-row">
                         <input type="tel" id="wa-phone" class="wa-input"
-                               placeholder="+573225237665" maxlength="20">
+                               placeholder="+57 300 000 0000" maxlength="20">
                         <button class="btn-save" onclick="guardarTelefono()">Guardar</button>
                     </div>
                     <p class="wa-hint">
@@ -282,7 +282,7 @@
 
                 <!-- Panel: notificación -->
                 <div class="panel">
-                    <h3>Pedido listo para entrega</h3>
+                    <h3>📦 Pedido listo para entrega</h3>
                     <input type="text" id="wa-detalle" class="wa-input"
                            placeholder="Ej: Pedido #42 — Ensalada César + Jugo">
                     <button class="btn-send-wa" onclick="enviarWhatsApp()">
@@ -350,7 +350,9 @@
                         <h3>
                             {% if mesa.nombre_personalizado %}
                                 {{ mesa.nombre_personalizado }}
+                                {% if mesa.numero %}
                                 <span class="badge badge-name">#{{ mesa.numero }}</span>
+                                {% endif %}
                             {% else %}
                                 Mesa {{ mesa.numero }}
                             {% endif %}
