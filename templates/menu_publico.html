@@ -317,11 +317,11 @@
         ══════════════════════════════════════════ */
         .listo-overlay {
             position: fixed; inset: 0; z-index: 4000;
-            display: none;                   /* JS controla display directamente */
+            display: none;
             align-items: center; justify-content: center;
             padding: 1.5rem;
-            background: rgba(0,0,0,.88);     /* siempre presente, no en .show */
-            -webkit-backdrop-filter: blur(10px);  /* iOS Safari */
+            background: rgba(0,0,0,.88);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
         .listo-overlay.show {
@@ -645,11 +645,8 @@
 
         function seleccionarMesa(id, nombre, numero, btn) {
             mesaSeleccionada = { id, nombre, numero };
-
-            // Marcar botón seleccionado usando la referencia explícita
             document.querySelectorAll('.mesa-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
-
             setTimeout(() => {
                 document.getElementById('mesa-modal-overlay').classList.add('hidden');
                 actualizarChipMesa();
@@ -844,8 +841,7 @@
         }
 
         /* ══════════════════════
-           PERSISTENCIA DE ESTADO
-           Si el cliente recarga la página, el polling se reanuda
+           PERSISTENCIA (localStorage)
         ══════════════════════ */
         function guardarEstado() {
             try {
@@ -909,27 +905,42 @@
         /* ══════════════════════
            NOTIFICACIÓN LISTO
         ══════════════════════ */
+        /* ══════════════════════
+           VOZ — anuncia el pedido en voz alta
+        ══════════════════════ */
+        function hablarPedidoListo() {
+            if (!window.speechSynthesis) return;
+
+            // Cancelar cualquier voz que esté sonando
+            window.speechSynthesis.cancel();
+
+            const mensaje = new SpeechSynthesisUtterance('Pedido listo, pase al mostrador a retirar su pedido');
+            mensaje.lang  = 'es-MX';   // español — funciona en todos los móviles
+            mensaje.rate  = 0.92;       // un poco más lento para claridad
+            mensaje.pitch = 1.05;
+            mensaje.volume = 1;
+
+            // iOS Safari a veces necesita que la primera utterance sea corta
+            // Repetimos el mensaje 2 veces para asegurarnos de que se escuche
+            mensaje.onend = () => {
+                setTimeout(() => {
+                    const repetir = new SpeechSynthesisUtterance('Pedido listo');
+                    repetir.lang = 'es-MX';
+                    repetir.rate = 0.92;
+                    repetir.volume = 1;
+                    window.speechSynthesis.speak(repetir);
+                }, 600);
+            };
+
+            window.speechSynthesis.speak(mensaje);
+        }
+
         function mostrarNotificacionListo() {
             // Vibrar si es móvil
             if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 500]);
 
-            // Sonido con Web Audio API
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                [0, 300, 600].forEach(delay => {
-                    setTimeout(() => {
-                        const o = ctx.createOscillator();
-                        const g = ctx.createGain();
-                        o.connect(g); g.connect(ctx.destination);
-                        o.type = 'sine';
-                        o.frequency.setValueAtTime(660, ctx.currentTime);
-                        o.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + .2);
-                        g.gain.setValueAtTime(.5, ctx.currentTime);
-                        g.gain.exponentialRampToValueAtTime(.01, ctx.currentTime + .35);
-                        o.start(ctx.currentTime); o.stop(ctx.currentTime + .38);
-                    }, delay);
-                });
-            } catch(e) {}
+            // Voz: "Pedido listo, pase al mostrador..."
+            hablarPedidoListo();
 
             // Notificación del navegador (si hay permiso)
             if (Notification?.permission === 'granted') {
@@ -942,15 +953,14 @@
                 n.onclick = () => { window.focus(); n.close(); };
             }
 
-            // Forzar que la animación del card se repita (ya corrió al cargar el DOM)
+            // Forzar que la animación del card se repita
             const overlay = document.getElementById('listo-overlay');
             const card    = overlay.querySelector('.listo-card');
             card.style.animation = 'none';
-            card.offsetHeight;   // reflow forzado — hace que el browser "olvide" la animación
+            card.offsetHeight;   // reflow forzado
             card.style.animation = '';
 
-            // Mostrar overlay — display:flex directo es más confiable en móvil
-            // que transicionar opacity con backdrop-filter activo
+            // Mostrar overlay
             document.getElementById('listo-mesa-nombre').textContent = mesaSeleccionada.nombre;
             overlay.classList.add('show');
             document.getElementById('esperando-badge').style.display = 'none';
@@ -958,6 +968,7 @@
         }
 
         function cerrarNotificacion() {
+            window.speechSynthesis?.cancel();
             const overlay = document.getElementById('listo-overlay');
             overlay.classList.remove('show');
         }
