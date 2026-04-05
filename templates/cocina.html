@@ -4,1070 +4,637 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cocina - Restaurante</title>
-
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- CSS del sistema -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-
     <style>
-        /* ─── VARIABLES ─────────────────────────────────── */
         :root {
-            --bg:        #080808;
-            --surface:   #111111;
-            --surface2:  #1a1a1a;
-            --border:    #252525;
-            --green:     #22c55e;
-            --green-dim: #16a34a;
-            --green-glow:rgba(34,197,94,.18);
-            --amber:     #f59e0b;
-            --red:       #ef4444;
-            --cyan:      #06b6d4;
-            --text:      #f0f0f0;
-            --muted:     #6b7280;
-            --card-shadow: 0 4px 24px rgba(0,0,0,.6);
+            --bg:          #070709;
+            --surface:     #0f0f13;
+            --surface2:    #17171d;
+            --border:      #1f1f28;
+            --border2:     #2a2a36;
+            --green:       #4ade80;
+            --green-dim:   #16a34a;
+            --green-glow:  rgba(74,222,128,.12);
+            --amber:       #fbbf24;
+            --amber-dim:   rgba(251,191,36,.12);
+            --red:         #f87171;
+            --red-dim:     rgba(248,113,113,.12);
+            --cyan:        #22d3ee;
+            --cyan-dim:    rgba(34,211,238,.12);
+            --violet:      #a78bfa;
+            --text:        #e8e8f0;
+            --text2:       #9090a8;
+            --text3:       #50505f;
         }
 
-        /* ─── RESET / BASE ──────────────────────────────── */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             background: var(--bg);
             color: var(--text);
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Syne', sans-serif;
             min-height: 100vh;
         }
 
-        /* subtle grid texture */
+        /* grid texture */
         body::before {
             content: '';
-            position: fixed;
-            inset: 0;
+            position: fixed; inset: 0;
             background-image:
-                linear-gradient(rgba(34,197,94,.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(34,197,94,.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            pointer-events: none;
-            z-index: 0;
+                linear-gradient(rgba(74,222,128,.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(74,222,128,.025) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none; z-index: 0;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 1.5rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* ─── NAVBAR ────────────────────────────────────── */
+        /* ── NAVBAR ────────────────────────────── */
         .navbar {
-            background: rgba(8,8,8,.95);
+            background: rgba(7,7,9,.96);
             border-bottom: 1px solid var(--border);
-            backdrop-filter: blur(12px);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            backdrop-filter: blur(16px);
+            position: sticky; top: 0; z-index: 100;
         }
-
         .nav-container {
-            max-width: 1400px;
-            margin: 0 auto;
+            max-width: 1600px; margin: 0 auto;
             padding: 0 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 60px;
-        }
-
-        .nav-brand {
-            display: flex;
-            align-items: center;
-            gap: .6rem;
-            font-family: 'Space Mono', monospace;
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--green);
-            text-decoration: none;
-            letter-spacing: -.02em;
-        }
-
-        .nav-brand svg { stroke: var(--green); }
-
-        .nav-menu {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: .4rem;
-            color: var(--muted);
-            text-decoration: none;
-            font-size: .9rem;
-            font-weight: 500;
-            transition: color .2s;
-        }
-
-        .nav-link:hover { color: var(--text); }
-        .nav-link.active { color: var(--green); }
-        .nav-link svg { width: 15px; height: 15px; }
-
-        .nav-user {
-            display: flex;
-            align-items: center;
-            gap: .4rem;
-            color: var(--muted);
-            font-size: .9rem;
-        }
-
-        .nav-logout {
-            border: 1px solid var(--border);
-            padding: .35rem .85rem;
-            border-radius: .4rem;
-            color: var(--muted) !important;
-        }
-
-        .nav-logout:hover {
-            border-color: var(--red);
-            color: var(--red) !important;
-        }
-
-        /* ─── HEADER ─────────────────────────────────────── */
-        .cocina-header {
-            text-align: center;
-            padding: 2.5rem 2rem;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 1rem;
-            margin-bottom: 1.5rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cocina-header::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(ellipse 60% 80% at 50% 110%, var(--green-glow), transparent);
-            pointer-events: none;
-        }
-
-        .cocina-header-icon {
-            width: 56px;
+            display: flex; align-items: center; justify-content: space-between;
             height: 56px;
-            margin: 0 auto 1rem;
-            background: var(--green-glow);
-            border: 1px solid var(--green);
-            border-radius: .75rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        }
+        .nav-brand {
+            display: flex; align-items: center; gap: .5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .95rem; font-weight: 700;
+            color: var(--green); text-decoration: none;
+        }
+        .nav-brand svg { stroke: var(--green); width: 18px; height: 18px; }
+        .nav-menu { display: flex; align-items: center; gap: 1.25rem; }
+        .nav-link {
+            display: flex; align-items: center; gap: .35rem;
+            color: var(--text2); text-decoration: none;
+            font-size: .85rem; font-weight: 600; transition: color .2s;
+        }
+        .nav-link:hover, .nav-link.active { color: var(--text); }
+        .nav-link svg { width: 14px; height: 14px; }
+        .nav-user {
+            display: flex; align-items: center; gap: .35rem;
+            color: var(--text3); font-size: .85rem;
+        }
+        .nav-logout {
+            border: 1px solid var(--border2); padding: .3rem .8rem;
+            border-radius: .4rem; font-size: .8rem;
+        }
+        .nav-logout:hover { border-color: var(--red); color: var(--red) !important; }
+
+        /* ── WRAPPER ───────────────────────────── */
+        .wrapper {
+            max-width: 1600px; margin: 0 auto;
+            padding: 1.25rem 1.5rem;
+            position: relative; z-index: 1;
         }
 
-        .cocina-header-icon svg { stroke: var(--green); width: 28px; height: 28px; }
-
-        .cocina-header h1 {
-            font-family: 'Space Mono', monospace;
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -.04em;
-            margin-bottom: .4rem;
-        }
-
-        .cocina-header h1 span { color: var(--green); }
-
-        .subtitle {
-            color: var(--muted);
-            font-size: 1rem;
-        }
-
-        /* ─── STATUS BAR ─────────────────────────────────── */
+        /* ── STATUS BAR ────────────────────────── */
         .status-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: .75rem;
             background: var(--surface);
             border: 1px solid var(--border);
-            padding: 1.1rem 1.5rem;
-            border-radius: .85rem;
-            margin-bottom: 1.75rem;
+            border-radius: .75rem;
+            padding: .85rem 1.25rem;
+            margin-bottom: 1.25rem;
         }
-
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: .75rem;
+        .status-chips { display: flex; gap: .5rem; flex-wrap: wrap; }
+        .chip {
+            display: inline-flex; align-items: center; gap: .4rem;
+            padding: .35rem .85rem;
+            border-radius: 2rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .8rem; font-weight: 700;
+            border: 1px solid;
         }
+        .chip svg { width: 13px; height: 13px; }
+        .chip-total   { background: rgba(74,222,128,.08); border-color: rgba(74,222,128,.3); color: var(--green); }
+        .chip-total svg { stroke: var(--green); }
+        .chip-pending { background: var(--amber-dim); border-color: rgba(251,191,36,.35); color: var(--amber); }
+        .chip-pending svg { stroke: var(--amber); }
+        .chip-cooking { background: var(--cyan-dim); border-color: rgba(34,211,238,.35); color: var(--cyan); }
+        .chip-cooking svg { stroke: var(--cyan); }
 
-        .status-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: .5rem;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
+        .status-right { display: flex; align-items: center; gap: .75rem; }
+        .refresh-badge {
+            display: inline-flex; align-items: center; gap: .35rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .75rem; color: var(--text3);
+            border: 1px solid var(--border2); padding: .3rem .75rem; border-radius: 2rem;
         }
+        .refresh-badge svg { width: 12px; height: 12px; stroke: var(--green); }
+        .refresh-badge.updating { border-color: var(--amber); color: var(--amber); }
+        .refresh-badge.updating svg { stroke: var(--amber); animation: spin .8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .status-icon svg { width: 18px; height: 18px; stroke: var(--green); }
-
-        .status-label {
-            font-size: .78rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: .06em;
-        }
-
-        .status-value {
-            font-family: 'Space Mono', monospace;
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--text);
-            line-height: 1;
-        }
-
-        /* probar sonido */
         .btn-sound {
-            display: flex;
-            align-items: center;
-            gap: .4rem;
-            padding: .45rem .9rem;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: .5rem;
-            color: var(--muted);
-            font-size: .82rem;
-            font-weight: 600;
-            cursor: pointer;
+            display: flex; align-items: center; gap: .35rem;
+            padding: .35rem .85rem;
+            background: var(--surface2); border: 1px solid var(--border2);
+            border-radius: 2rem; color: var(--text2);
+            font-size: .78rem; font-weight: 600; cursor: pointer;
             transition: all .2s;
         }
+        .btn-sound:hover { border-color: var(--green); color: var(--green); }
+        .btn-sound svg { width: 13px; height: 13px; }
 
-        .btn-sound:hover {
-            border-color: var(--green);
-            color: var(--green);
+        /* ── MESAS GRID ────────────────────────── */
+        /* Masonry-like columns so cards don't stretch */
+        .mesas-grid {
+            columns: 4 280px;
+            column-gap: .85rem;
         }
 
-        .btn-sound svg { width: 14px; height: 14px; }
-
-        /* refresh indicator */
-        .refresh-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: .5rem;
-            padding: .5rem 1rem;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: .5rem;
-            font-family: 'Space Mono', monospace;
-            font-size: .8rem;
-            color: var(--muted);
-        }
-
-        .refresh-indicator svg { width: 14px; height: 14px; stroke: var(--green); }
-
-        .refresh-indicator.updating {
-            border-color: var(--amber);
-            color: var(--amber);
-            animation: pulse 1s ease-in-out infinite;
-        }
-
-        .refresh-indicator.updating svg { stroke: var(--amber); }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .6; }
-        }
-
-        /* ─── PEDIDOS GRID ───────────────────────────────── */
-        .pedidos-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 0.7rem;
-        }
-
-        /* ─── PEDIDO CARD ────────────────────────────────── */
-        .pedido-card {
+        /* ── TICKET CARD ───────────────────────── */
+        .ticket {
+            break-inside: avoid;
+            margin-bottom: .85rem;
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 1rem;
-            padding: 0.8rem;
-            font-size: 0.85rem;
-            box-shadow: var(--card-shadow);
-            transition: transform .25s, box-shadow .25s, border-color .25s;
-            position: relative;
+            border-radius: .85rem;
             overflow: hidden;
+            transition: box-shadow .25s;
+        }
+        .ticket:hover { box-shadow: 0 8px 40px rgba(0,0,0,.5); }
+
+        /* urgency levels */
+        .ticket.urgency-ok     { border-top: 3px solid var(--green); }
+        .ticket.urgency-warm   { border-top: 3px solid var(--amber); }
+        .ticket.urgency-hot    { border-top: 3px solid #f97316; }
+        .ticket.urgency-fire   { border-top: 3px solid var(--red); animation: borderPulse 1.2s ease-in-out infinite; }
+
+        @keyframes borderPulse {
+            0%,100% { border-top-color: var(--red); }
+            50%      { border-top-color: #ff6b6b; box-shadow: 0 -2px 12px rgba(248,113,113,.4); }
         }
 
-        /* left accent stripe */
-        .pedido-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: var(--amber);
-            border-radius: 1rem 0 0 1rem;
+        /* ── TICKET HEADER ─────────────────────── */
+        .ticket-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: .7rem 1rem;
+            border-bottom: 1px dashed var(--border2);
+            background: var(--surface2);
+        }
+        .ticket-mesa {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.05rem; font-weight: 800;
+            color: var(--text);
+            display: flex; align-items: center; gap: .5rem;
+        }
+        .ticket-mesa .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--green); flex-shrink: 0;
+        }
+        .ticket-meta { display: flex; align-items: center; gap: .5rem; }
+        .ticket-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .75rem; color: var(--text3);
+            display: flex; align-items: center; gap: .3rem;
+        }
+        .ticket-time svg { width: 11px; height: 11px; stroke: var(--text3); }
+        .ticket-time.warn { color: var(--amber); }
+        .ticket-time.warn svg { stroke: var(--amber); }
+        .ticket-time.fire { color: var(--red); font-weight: 700; }
+        .ticket-time.fire svg { stroke: var(--red); }
+
+        .ticket-count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .7rem; font-weight: 700;
+            background: var(--border2); color: var(--text2);
+            padding: .15rem .5rem; border-radius: 2rem;
         }
 
-        .pedido-card.estado-preparando::before { background: var(--cyan); }
+        /* ── ITEM LIST ─────────────────────────── */
+        .ticket-items { padding: .5rem 0; }
 
-        .pedido-card.nuevo {
-            animation: slideInBounce .5s ease-out, highlightDark 2s ease-in-out;
-            border-color: var(--amber);
-        }
-
-        @keyframes slideInBounce {
-            0%   { opacity: 0; transform: translateY(20px) scale(.95); }
-            60%  { transform: translateY(-6px) scale(1.01); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @keyframes highlightDark {
-            0%, 100% { background: var(--surface); }
-            50%       { background: #1c1700; }
-        }
-
-        .pedido-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(0,0,0,.7), 0 0 0 1px var(--border);
-        }
-
-        /* ─── CARD HEADER ────────────────────────────────── */
-        .pedido-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1.1rem;
-            padding-bottom: 1rem;
+        .item-row {
+            padding: .45rem 1rem;
             border-bottom: 1px solid var(--border);
+            transition: background .15s;
         }
+        .item-row:last-child { border-bottom: none; }
+        .item-row:hover { background: var(--surface2); }
 
-        .pedido-mesa {
-            font-size: 1.1rem;
-            font-family: 'Space Mono', monospace;
-            font-weight: 700;
-            color: var(--green);
-            line-height: 1;
+        /* item top line */
+        .item-main {
+            display: flex; align-items: center; gap: .6rem;
+            margin-bottom: .2rem;
         }
-
-        .pedido-tiempo {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: .2rem;
+        .item-qty {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .8rem; font-weight: 800;
+            min-width: 1.6rem; height: 1.6rem;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: var(--green); color: #000;
+            border-radius: .35rem; flex-shrink: 0;
         }
-
-        .tiempo-hora {
-            display: flex;
-            align-items: center;
-            gap: .3rem;
-            font-family: 'Space Mono', monospace;
-            font-size: .9rem;
-            font-weight: 600;
-            color: var(--text);
+        .item-name {
+            font-size: .9rem; font-weight: 600; color: var(--text);
+            flex: 1; line-height: 1.3;
         }
-
-        .tiempo-hora svg { width: 13px; height: 13px; stroke: var(--muted); }
-
-        .tiempo-transcurrido {
-            font-size: .72rem;
-            color: var(--muted);
-        }
-
-        /* ─── PRODUCTO ───────────────────────────────────── */
-        .pedido-producto {
-            font-size: 0.95rem;
-            margin-bottom: 0.3rem;
-            font-weight: 700;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: .5rem;
-        }
-
-        .pedido-cantidad {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 2rem;
-            height: 2rem;
-            padding: 0 .5rem;
-            background: var(--green);
-            color: #000;
-            border-radius: .4rem;
-            font-family: 'Space Mono', monospace;
-            font-size: .85rem;
-            font-weight: 700;
+        .item-estado {
             flex-shrink: 0;
+            width: 8px; height: 8px; border-radius: 50%;
+        }
+        .item-estado.pendiente { background: var(--amber); box-shadow: 0 0 6px rgba(251,191,36,.5); }
+        .item-estado.preparando { background: var(--cyan); box-shadow: 0 0 6px rgba(34,211,238,.5); }
+
+        /* notas inline */
+        .item-nota {
+            margin-left: 2.2rem;
+            font-size: .75rem; color: #c4a44a;
+            background: rgba(251,191,36,.06);
+            border-left: 2px solid rgba(251,191,36,.3);
+            padding: .2rem .5rem;
+            border-radius: 0 .3rem .3rem 0;
+            line-height: 1.4;
         }
 
-        /* ─── NOTAS ──────────────────────────────────────── */
-        .pedido-notas {
-            padding: 0.4rem;
-            font-size: 0.75rem;
-            background: rgba(245,158,11,.08);
-            border: 1px solid rgba(245,158,11,.3);
-            border-radius: .6rem;
-            margin: .85rem 0;
+        /* item actions row */
+        .item-actions {
+            display: flex; gap: .4rem;
+            margin-top: .4rem; margin-left: 2.2rem;
         }
-        .pedido-card {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .pedido-notas-header {
-            display: flex;
-            align-items: center;
-            gap: .35rem;
-            color: var(--amber);
-            font-size: .78rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .05em;
-            margin-bottom: .4rem;
-        }
-
-        .pedido-notas-header svg { width: 13px; height: 13px; stroke: var(--amber); }
-
-        .pedido-notas p {
-            color: #d1a554;
-            font-size: .9rem;
-        }
-
-        /* ─── FOOTER DEL CARD ────────────────────────────── */
-        .pedido-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: .85rem;
-            padding-top: .85rem;
-            border-top: 1px solid var(--border);
-            font-size: .85rem;
-        }
-
-        .pedido-mesero {
-            display: flex;
-            align-items: center;
-            gap: .35rem;
-            color: var(--muted);
-        }
-
-        .pedido-mesero svg { width: 14px; height: 14px; stroke: var(--muted); }
-
-        /* estado badges */
-        .estado-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: .35rem;
-            padding: .3rem .75rem;
+        .btn-item {
+            display: inline-flex; align-items: center; gap: .3rem;
+            padding: .25rem .65rem;
             border-radius: .4rem;
-            font-size: .75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .04em;
-        }
-
-        .estado-badge svg { width: 12px; height: 12px; }
-
-        .estado-pendiente {
-            background: rgba(239,68,68,.12);
-            color: #f87171;
-            border: 1px solid rgba(239,68,68,.25);
-        }
-
-        .estado-pendiente svg { stroke: #f87171; }
-
-        .estado-preparando {
-            background: rgba(6,182,212,.12);
-            color: var(--cyan);
-            border: 1px solid rgba(6,182,212,.25);
-        }
-
-        .estado-preparando svg { stroke: var(--cyan); }
-
-        /* ─── BOTONES DE ACCIÓN ──────────────────────────── */
-        .pedido-actions {
-            margin-top: 1.1rem;
-            display: grid;
-            gap: .5rem;
-        }
-
-        .btn-cocina {
-            padding: .4rem .6rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            border-radius: .65rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: .5rem;
-            text-decoration: none;
-            transition: all .2s;
-            border: none;
-            cursor: pointer;
+            font-size: .72rem; font-weight: 700;
+            text-decoration: none; border: 1px solid;
+            cursor: pointer; transition: all .15s;
+            font-family: 'Syne', sans-serif;
             letter-spacing: .01em;
         }
+        .btn-item svg { width: 11px; height: 11px; }
 
-        .btn-cocina svg { width: 16px; height: 16px; }
+        .btn-start {
+            background: var(--amber-dim); border-color: rgba(251,191,36,.4); color: var(--amber);
+        }
+        .btn-start svg { stroke: var(--amber); }
+        .btn-start:hover { background: rgba(251,191,36,.2); border-color: var(--amber); }
 
-        /* comenzar a preparar */
-        .btn-warning {
-            background: rgba(245,158,11,.15);
-            color: var(--amber);
-            border: 1px solid rgba(245,158,11,.4);
+        .btn-done {
+            background: var(--green-glow); border-color: rgba(74,222,128,.4); color: var(--green);
+        }
+        .btn-done svg { stroke: var(--green); }
+        .btn-done:hover { background: rgba(74,222,128,.2); border-color: var(--green); box-shadow: 0 0 12px var(--green-glow); }
+
+        /* mesero chip */
+        .ticket-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: .5rem 1rem;
+            border-top: 1px dashed var(--border2);
+            background: var(--surface2);
+        }
+        .ticket-mesero {
+            display: flex; align-items: center; gap: .35rem;
+            font-size: .72rem; color: var(--text3);
+        }
+        .ticket-mesero svg { width: 12px; height: 12px; stroke: var(--text3); }
+
+        .ticket-pedidos-count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .7rem; color: var(--text3);
         }
 
-        .btn-warning:hover {
-            background: rgba(245,158,11,.25);
-            border-color: var(--amber);
-            box-shadow: 0 0 18px rgba(245,158,11,.2);
-        }
-
-        .btn-warning svg { stroke: var(--amber); }
-
-        /* marcar como listo */
-        .btn-success {
-            background: rgba(34,197,94,.15);
-            color: var(--green);
-            border: 1px solid rgba(34,197,94,.4);
-        }
-
-        .btn-success:hover {
-            background: rgba(34,197,94,.25);
-            border-color: var(--green);
-            box-shadow: 0 0 18px var(--green-glow);
-        }
-
-        .btn-success svg { stroke: var(--green); }
-
-        /* ─── EMPTY STATE ────────────────────────────────── */
+        /* ── EMPTY STATE ───────────────────────── */
         .empty-state {
-            text-align: center;
-            padding: 5rem 2rem;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 1rem;
+            text-align: center; padding: 5rem 2rem;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 1rem; grid-column: 1/-1;
         }
-
         .empty-icon {
-            width: 72px;
-            height: 72px;
-            margin: 0 auto 1.5rem;
+            width: 64px; height: 64px; margin: 0 auto 1.25rem;
             background: var(--green-glow);
-            border: 1px solid rgba(34,197,94,.3);
-            border-radius: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            border: 1px solid rgba(74,222,128,.25);
+            border-radius: .85rem;
+            display: flex; align-items: center; justify-content: center;
             animation: float 3s ease-in-out infinite;
         }
-
-        .empty-icon svg { stroke: var(--green); width: 34px; height: 34px; }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50%       { transform: translateY(-8px); }
-        }
-
+        .empty-icon svg { stroke: var(--green); width: 30px; height: 30px; }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         .empty-state h2 {
-            font-family: 'Space Mono', monospace;
-            font-size: 1.5rem;
-            color: var(--text);
-            margin-bottom: .5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.4rem; color: var(--text); margin-bottom: .5rem;
         }
+        .empty-state p { color: var(--text3); font-size: .9rem; }
 
-        .text-muted { color: var(--muted); }
-
-        /* ─── TOAST ──────────────────────────────────────── */
-        .notification-toast {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            background: var(--surface);
-            border: 1px solid var(--green);
+        /* ── TOAST ─────────────────────────────── */
+        .toast {
+            position: fixed; top: 70px; right: 1.25rem;
+            background: var(--surface); border: 1px solid var(--green);
             box-shadow: 0 8px 40px rgba(0,0,0,.6), 0 0 20px var(--green-glow);
-            color: var(--text);
-            padding: 1rem 1.4rem;
-            border-radius: .75rem;
-            display: none;
-            align-items: center;
-            gap: .75rem;
-            z-index: 2000;
-            animation: slideInRight .4s ease-out;
-            min-width: 260px;
+            color: var(--text); padding: .85rem 1.2rem;
+            border-radius: .65rem;
+            display: none; align-items: center; gap: .65rem;
+            z-index: 2000; min-width: 240px;
+            animation: slideInRight .35s ease-out;
         }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(110%); } to { opacity: 1; transform: translateX(0); } }
+        .toast.show { display: flex; }
+        .toast-icon svg { width: 18px; height: 18px; stroke: var(--green); }
+        .toast-text { font-weight: 600; font-size: .88rem; }
 
-        @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(110%); }
-            to   { opacity: 1; transform: translateX(0); }
+        /* ── RESPONSIVE ────────────────────────── */
+        @media (max-width: 900px) {
+            .mesas-grid { columns: 2 240px; }
+            .status-bar { flex-direction: column; align-items: flex-start; }
         }
-
-        .notification-toast.show { display: flex; }
-
-        .notification-icon svg { width: 20px; height: 20px; stroke: var(--green); }
-
-        .notification-text { font-weight: 600; font-size: .9rem; }
-
-        /* ─── RESPONSIVE ─────────────────────────────────── */
-        @media (max-width: 768px) {
-            .cocina-header h1 { font-size: 1.6rem; }
-
-            .status-bar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .pedidos-grid { grid-template-columns: 1fr; }
-
-            .notification-toast {
-                right: 12px;
-                left: 12px;
-                top: 72px;
-            }
+        @media (max-width: 520px) {
+            .mesas-grid { columns: 1; }
         }
     </style>
 </head>
 <body>
-    <!-- ── NAVBAR ── -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="{{ url_for('dashboard') }}" class="nav-brand">
-                <i data-lucide="utensils"></i>
-                Restaurante Manager
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="{{ url_for('dashboard') }}" class="nav-brand">
+            <i data-lucide="utensils"></i>
+            Restaurante
+        </a>
+        <div class="nav-menu">
+            <a href="{{ url_for('cocina') }}" class="nav-link active">
+                <i data-lucide="chef-hat"></i> Cocina
             </a>
-            <div class="nav-menu">
-                <a href="{{ url_for('cocina') }}" class="nav-link active">
-                    <i data-lucide="chef-hat"></i> Cocina
-                </a>
-                <a href="{{ url_for('dashboard') }}" class="nav-link">
-                    <i data-lucide="bar-chart-2"></i> Dashboard
-                </a>
-                <span class="nav-user">
-                    <i data-lucide="user" style="width:14px;height:14px;"></i>
-                    {{ current_user.nombre }}
-                </span>
-                <a href="{{ url_for('logout') }}" class="nav-link nav-logout">Salir</a>
-            </div>
+            <a href="{{ url_for('dashboard') }}" class="nav-link">
+                <i data-lucide="layout-dashboard"></i> Dashboard
+            </a>
+            <span class="nav-user">
+                <i data-lucide="user" style="width:13px;height:13px;"></i>
+                {{ current_user.nombre }}
+            </span>
+            <a href="{{ url_for('logout') }}" class="nav-link nav-logout">Salir</a>
         </div>
-    </nav>
+    </div>
+</nav>
 
-    <div class="container">
+<div class="wrapper">
 
-        <!-- ── HEADER ── -->
-        <div class="cocina-header">
-            <div class="cocina-header-icon">
-                <i data-lucide="chef-hat"></i>
-            </div>
-            <h1>Panel de <span>Cocina</span></h1>
-            <p class="subtitle">Pedidos pendientes y en preparación</p>
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+        <div class="status-chips">
+            <span class="chip chip-total">
+                <i data-lucide="clipboard-list"></i>
+                <span id="total-pedidos">{{ pedidos|length }}</span> pedidos
+            </span>
+            <span class="chip chip-pending">
+                <i data-lucide="hourglass"></i>
+                <span id="pendientes-count">{{ pedidos|selectattr('estado','equalto','pendiente')|list|length }}</span> pendientes
+            </span>
+            <span class="chip chip-cooking">
+                <i data-lucide="flame"></i>
+                <span id="preparando-count">{{ pedidos|selectattr('estado','equalto','preparando')|list|length }}</span> en preparación
+            </span>
         </div>
-
-        <!-- ── STATUS BAR ── -->
-        <div class="status-bar">
-
-            <div class="status-item">
-                <div class="status-icon"><i data-lucide="clipboard-list"></i></div>
-                <div>
-                    <div class="status-label">Total Pedidos</div>
-                    <div class="status-value" id="total-pedidos">{{ pedidos|length }}</div>
-                </div>
-                <button onclick="playAlertSound(); showToast('Probando sonido', 'info')"
-                        class="btn-sound">
-                    <i data-lucide="volume-2"></i> Probar Sonido
-                </button>
-            </div>
-
-            <div class="status-item">
-                <div class="status-icon"><i data-lucide="hourglass"></i></div>
-                <div>
-                    <div class="status-label">Pendientes</div>
-                    <div class="status-value" id="pendientes-count">
-                        {{ pedidos|selectattr('estado', 'equalto', 'pendiente')|list|length }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="status-item">
-                <div class="status-icon"><i data-lucide="flame"></i></div>
-                <div>
-                    <div class="status-label">En Preparación</div>
-                    <div class="status-value" id="preparando-count">
-                        {{ pedidos|selectattr('estado', 'equalto', 'preparando')|list|length }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="status-item">
-                <span class="refresh-indicator" id="refresh-status">
-                    <i data-lucide="refresh-cw"></i>
-                    Actualizando en <span id="countdown">5</span>s
-                </span>
-            </div>
-
+        <div class="status-right">
+            <button onclick="playAlertSound(); showToast('🔊 Sonido activado', 'success')" class="btn-sound">
+                <i data-lucide="volume-2"></i> Probar sonido
+            </button>
+            <span class="refresh-badge" id="refresh-status">
+                <i data-lucide="refresh-cw"></i>
+                <span id="countdown">5</span>s
+            </span>
         </div>
+    </div>
 
-        <!-- ── PEDIDOS GRID ── -->
-        <div id="pedidos-container">
-            {% if pedidos_por_mesa %}
-            <div class="pedidos-grid" id="pedidos-grid">
-        
-                {% for grupo in pedidos_por_mesa %}
-                <div class="pedido-card">
-        
-                    <!-- HEADER DE LA MESA -->
-                    <div class="pedido-header">
-                        <div class="pedido-mesa">Mesa {{ grupo.mesa.numero }}</div>
+    <!-- PEDIDOS -->
+    <div id="pedidos-container">
+    {% if pedidos_por_mesa %}
+    <div class="mesas-grid" id="pedidos-grid">
+
+        {% for grupo in pedidos_por_mesa %}
+        {% set minutos = ((now - grupo.pedidos[0].fecha).total_seconds() // 60)|int if now else 0 %}
+
+        <div class="ticket {% if minutos > 20 %}urgency-fire{% elif minutos > 15 %}urgency-hot{% elif minutos > 8 %}urgency-warm{% else %}urgency-ok{% endif %}">
+
+            <!-- HEADER -->
+            <div class="ticket-head">
+                <div class="ticket-mesa">
+                    <span class="dot"></span>
+                    {{ grupo.mesa.display_name }}
+                </div>
+                <div class="ticket-meta">
+                    <span class="ticket-count">{{ grupo.pedidos|length }} ítem{% if grupo.pedidos|length != 1 %}s{% endif %}</span>
+                    <span class="ticket-time {% if minutos > 15 %}fire{% elif minutos > 8 %}warn{% endif %}"
+                          data-inicio="{{ grupo.pedidos[0].fecha.timestamp() }}">
+                        <i data-lucide="clock"></i>
+                        <span class="elapsed">{{ minutos }}m</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- ÍTEMS -->
+            <div class="ticket-items">
+                {% for pedido in grupo.pedidos %}
+                <div class="item-row" data-id="{{ pedido.id }}">
+                    <div class="item-main">
+                        <span class="item-qty">{{ pedido.cantidad }}</span>
+                        <span class="item-name">{{ pedido.producto }}</span>
+                        <span class="item-estado {{ pedido.estado }}" title="{{ pedido.estado|title }}"></span>
                     </div>
-        
-                    <!-- 🔥 LOOP DE PEDIDOS (CLAVE) -->
-                    {% for pedido in grupo.pedidos %}
-        
-                    <div class="pedido-producto" data-id="{{ pedido.id }}">
-                        <span class="pedido-cantidad">{{ pedido.cantidad }}</span>
-                        {{ pedido.producto }}
-                    </div>
-        
+
                     {% if pedido.notas %}
-                    <div class="pedido-notas">
-                        <div class="pedido-notas-header">
-                            <i data-lucide="alert-triangle"></i> Notas Especiales
-                        </div>
-                        <p>{{ pedido.notas }}</p>
-                    </div>
+                    <div class="item-nota">⚠ {{ pedido.notas }}</div>
                     {% endif %}
-        
-                    <div class="pedido-info">
-                        <div class="pedido-mesero">
-                            <i data-lucide="user"></i>
-                            <span>{{ pedido.mesero.nombre }}</span>
-                        </div>
-                        <span class="estado-badge estado-{{ pedido.estado }}">
-                            {% if pedido.estado == 'pendiente' %}
-                                <i data-lucide="hourglass"></i> Pendiente
-                            {% else %}
-                                <i data-lucide="flame"></i> Preparando
-                            {% endif %}
-                        </span>
-                    </div>
-        
-                    <div class="pedido-actions">
+
+                    <div class="item-actions">
                         {% if pedido.estado == 'pendiente' %}
                         <a href="{{ url_for('actualizar_estado', pedido_id=pedido.id, estado='preparando') }}"
-                           class="btn-cocina btn-warning">
-                            <i data-lucide="flame"></i> Comenzar a Preparar
+                           class="btn-item btn-start">
+                            <i data-lucide="flame"></i> Preparar
                         </a>
                         {% elif pedido.estado == 'preparando' %}
                         <a href="{{ url_for('actualizar_estado', pedido_id=pedido.id, estado='listo') }}"
-                           class="btn-cocina btn-success">
-                            <i data-lucide="check-circle"></i> Marcar como Listo
+                           class="btn-item btn-done">
+                            <i data-lucide="check-circle"></i> Listo
                         </a>
                         {% endif %}
                     </div>
-        
-                    <hr style="margin: 10px 0; border-color: #252525;">
-        
-                    {% endfor %}
-        
                 </div>
                 {% endfor %}
-        
             </div>
-            {% else %}
-            <div class="empty-state">
-                <div class="empty-icon"><i data-lucide="sparkles"></i></div>
-                <h2>No hay pedidos pendientes</h2>
-                <p class="text-muted">Todos los pedidos están listos o entregados</p>
-            </div>
-            {% endif %}
-        </div>
-    </div><!-- /container -->
 
-    <!-- ── TOAST ── -->
-    <div class="notification-toast" id="notification">
-        <span class="notification-icon"><i data-lucide="bell"></i></span>
-        <div class="notification-text">¡Nuevo pedido en cocina!</div>
+            <!-- FOOTER -->
+            <div class="ticket-footer">
+                <span class="ticket-mesero">
+                    <i data-lucide="user"></i>
+                    {{ grupo.pedidos[0].mesero.nombre }}
+                </span>
+                <span class="ticket-pedidos-count">
+                    #{{ grupo.pedidos[0].id }}
+                </span>
+            </div>
+
+        </div>
+        {% endfor %}
+
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i data-lucide="sparkles"></i></div>
+        <h2>Sin pedidos pendientes</h2>
+        <p>Todos los pedidos están listos o entregados</p>
+    </div>
+    {% endif %}
     </div>
 
-    <audio id="alert-sound" preload="auto"></audio>
+</div><!-- /wrapper -->
 
-    <script>
-        // ── Lucide init ──
-        lucide.createIcons();
+<!-- TOAST -->
+<div class="toast" id="toast">
+    <span class="toast-icon"><i data-lucide="bell"></i></span>
+    <div class="toast-text"></div>
+</div>
 
-        // ── CONFIGURACIÓN ──
-        const REFRESH_INTERVAL = 5000;
-        const CHECK_INTERVAL   = 3000;
-        let currentPedidosIds  = new Set();
-        document.querySelectorAll('[data-id]').forEach(el => {
-            currentPedidosIds.add(el.dataset.id);
+<script>
+    lucide.createIcons();
+
+    /* ── IDs conocidos ── */
+    let knownIds = new Set();
+    document.querySelectorAll('[data-id]').forEach(el => knownIds.add(el.dataset.id));
+
+    let hasInteracted = false;
+    let lastSound = 0;
+    let countdown = 5;
+    let isChecking = false;
+
+    /* ── Sonido ── */
+    function createAlertSound() {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        return function () {
+            if (!hasInteracted) return;
+            const now = Date.now();
+            if (now - lastSound < 5000) return;
+            lastSound = now;
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    const o = ctx.createOscillator(), g = ctx.createGain();
+                    o.connect(g); g.connect(ctx.destination);
+                    o.type = 'square';
+                    o.frequency.setValueAtTime(880, ctx.currentTime);
+                    o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + .25);
+                    g.gain.setValueAtTime(.55, ctx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(.01, ctx.currentTime + .28);
+                    o.start(ctx.currentTime); o.stop(ctx.currentTime + .3);
+                }, i * 380);
+            }
+            if (navigator.vibrate) navigator.vibrate([200,80,200,80,400]);
+        };
+    }
+    const playAlertSound = createAlertSound();
+
+    document.addEventListener('click', () => { hasInteracted = true; }, { once: true });
+    document.addEventListener('keydown', () => { hasInteracted = true; }, { once: true });
+    setTimeout(() => { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); }, 2000);
+
+    /* ── Toast ── */
+    function showToast(msg, type = 'info') {
+        const el = document.getElementById('toast');
+        const colors = { success: '#4ade80', warning: '#fbbf24', error: '#f87171', info: '#22d3ee' };
+        const c = colors[type] || colors.info;
+        el.style.borderColor = c;
+        el.style.boxShadow = `0 8px 40px rgba(0,0,0,.6), 0 0 20px ${c}33`;
+        el.querySelector('.toast-icon svg').style.stroke = c;
+        el.querySelector('.toast-text').textContent = msg;
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 4500);
+    }
+
+    /* ── Tiempos transcurridos ── */
+    function updateElapsed() {
+        const now = Date.now() / 1000;
+        document.querySelectorAll('.ticket-time[data-inicio]').forEach(el => {
+            const mins = Math.floor((now - parseFloat(el.dataset.inicio)) / 60);
+            el.querySelector('.elapsed').textContent = mins + 'm';
+            el.className = 'ticket-time' + (mins > 15 ? ' fire' : mins > 8 ? ' warn' : '');
         });
-        let countdown          = 5;
-        let hasUserInteracted  = false;
-        let lastNotificationTime = 0;
-        const NOTIFICATION_COOLDOWN = 5000;
+    }
 
-        // ── NOTIFICACIÓN DEL NAVEGADOR ──
-        function requestNotificationPermission() {
-            if ('Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission();
-            }
-        }
-
-        function showBrowserNotification(message, pedido) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                const notification = new Notification('Nuevo Pedido en Cocina', {
-                    body: message,
-                    icon: '/static/favicon.ico',
-                    badge: '/static/favicon.ico',
-                    tag: 'cocina-pedido',
-                    requireInteraction: true,
-                    vibrate: [200, 100, 200, 100, 200]
-                });
-                notification.onclick = function() { window.focus(); notification.close(); };
-                setTimeout(() => notification.close(), 10000);
-            }
-        }
-
-        // ── SONIDO ──
-        function createAlertSound() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-            return function playAlert() {
-                if (!hasUserInteracted) return;
-
-                const now = Date.now();
-                if (now - lastNotificationTime < NOTIFICATION_COOLDOWN) return;
-                lastNotificationTime = now;
-
-                const duration = 0.3;
-                const volume   = 0.7;
-
-                for (let repeat = 0; repeat < 3; repeat++) {
-                    setTimeout(() => {
-                        const osc1  = audioContext.createOscillator();
-                        const gain1 = audioContext.createGain();
-                        osc1.connect(gain1);
-                        gain1.connect(audioContext.destination);
-                        osc1.type = 'square';
-                        osc1.frequency.setValueAtTime(800, audioContext.currentTime);
-                        osc1.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + duration);
-                        gain1.gain.setValueAtTime(volume, audioContext.currentTime);
-                        gain1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-                        osc1.start(audioContext.currentTime);
-                        osc1.stop(audioContext.currentTime + duration);
-
-                        setTimeout(() => {
-                            const osc2  = audioContext.createOscillator();
-                            const gain2 = audioContext.createGain();
-                            osc2.connect(gain2);
-                            gain2.connect(audioContext.destination);
-                            osc2.type = 'square';
-                            osc2.frequency.setValueAtTime(1200, audioContext.currentTime);
-                            osc2.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + duration);
-                            gain2.gain.setValueAtTime(volume, audioContext.currentTime);
-                            gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-                            osc2.start(audioContext.currentTime);
-                            osc2.stop(audioContext.currentTime + duration);
-                        }, duration * 1000);
-
-                    }, repeat * 700);
-                }
-
-                if ('vibrate' in navigator) {
-                    navigator.vibrate([300, 100, 300, 100, 300, 100, 300]);
-                }
-            };
-        }
-
-        const playAlertSound = createAlertSound();
-
-        // ── INTERACCIÓN ──
-        document.addEventListener('click', () => {
-            if (!hasUserInteracted) {
-                hasUserInteracted = true;
-                showToast('Sonido de alertas activado', 'success');
-            }
-        }, { once: true });
-
-        document.addEventListener('keydown', () => {
-            if (!hasUserInteracted) hasUserInteracted = true;
-        }, { once: true });
-
-        setTimeout(requestNotificationPermission, 2000);
-
-        // ── INIT IDS ──
-
-
-        // ── TOAST ──
-        function showToast(message, type = 'info') {
-            const notification = document.getElementById('notification');
-            const notificationText = notification.querySelector('.notification-text');
-
-            const colors = {
-                success: { border: '#22c55e', glow: 'rgba(34,197,94,.3)' },
-                warning: { border: '#f59e0b', glow: 'rgba(245,158,11,.3)' },
-                error:   { border: '#ef4444', glow: 'rgba(239,68,68,.3)'  },
-                info:    { border: '#3b82f6', glow: 'rgba(59,130,246,.3)' }
-            };
-
-            const c = colors[type] || colors.info;
-            notification.style.borderColor = c.border;
-            notification.style.boxShadow   = `0 8px 40px rgba(0,0,0,.6), 0 0 20px ${c.glow}`;
-            notification.querySelector('.notification-icon svg').style.stroke = c.border;
-
-            notificationText.textContent = message;
-            notification.classList.add('show');
-            setTimeout(() => notification.classList.remove('show'), 5000);
-        }
-
-        // ── TIEMPOS TRANSCURRIDOS ──
-        function updateElapsedTimes() {
-            const now = Date.now() / 1000;
-            document.querySelectorAll('.tiempo-transcurrido').forEach(el => {
-                const timestamp = parseFloat(el.dataset.timestamp);
-                const minutes   = Math.floor((now - timestamp) / 60);
-                el.textContent  = `Hace ${minutes} min`;
-
-                if (minutes > 20) {
-                    el.style.color      = '#dc2626';
-                    el.style.fontWeight = '700';
-                    el.closest('.pedido-card').style.borderColor = '#dc2626';
-                } else if (minutes > 15) {
-                    el.style.color      = '#ef4444';
-                    el.style.fontWeight = '700';
-                } else if (minutes > 10) {
-                    el.style.color = '#f59e0b';
+    /* ── Verificar nuevos ── */
+    async function checkNew() {
+        if (isChecking) return;
+        isChecking = true;
+        try {
+            const r = await fetch('/api/cocina/verificar_nuevos');
+            const d = await r.json();
+            let newOnes = [];
+            d.pedidos.forEach(p => {
+                if (!knownIds.has(p.id.toString())) {
+                    knownIds.add(p.id.toString());
+                    newOnes.push(p);
                 }
             });
-        }
-
-        // ── VERIFICAR NUEVOS PEDIDOS ──
-        let isChecking = false;
-
-        async function checkNewPedidos() {
-            if (isChecking) return;
-            isChecking = true;
-
-            try {
-                const response = await fetch('/api/cocina/verificar_nuevos');
-                const data     = await response.json();
-
-                let hasNewPedidos  = false;
-                let newPedidosList = [];
-
-                data.pedidos.forEach(pedido => {
-                    if (!currentPedidosIds.has(pedido.id.toString())) {
-                        hasNewPedidos = true;
-                        currentPedidosIds.add(pedido.id.toString());
-                        newPedidosList.push(pedido);
-                    }
-                });
-
-                if (hasNewPedidos) {
-                    playAlertSound();
-                    const mensaje = newPedidosList.length === 1
-                        ? `Mesa ${newPedidosList[0].mesa}: ${newPedidosList[0].cantidad}x ${newPedidosList[0].producto}`
-                        : `${newPedidosList.length} nuevos pedidos en cocina`;
-
-                    showToast(mensaje, 'warning');
-                    showBrowserNotification(mensaje, newPedidosList[0]);
-                    setTimeout(() => updatePage(), 500);
+            if (newOnes.length) {
+                playAlertSound();
+                const msg = newOnes.length === 1
+                    ? `${newOnes[0].mesa}: ${newOnes[0].cantidad}× ${newOnes[0].producto}`
+                    : `${newOnes.length} nuevos pedidos en cocina`;
+                showToast('🔔 ' + msg, 'warning');
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification('Nuevo pedido', { body: msg, tag: 'cocina' });
                 }
-
-                if (!hasNewPedidos) {
-                    document.getElementById('total-pedidos').textContent    = data.total;
-                    document.getElementById('pendientes-count').textContent = data.pendientes;
-                    document.getElementById('preparando-count').textContent = data.preparando;
-                }
-
-            } catch (error) {
-                console.error('Error al verificar pedidos:', error);
-            } finally {
-                isChecking = false;
+                setTimeout(updatePage, 400);
+            } else {
+                document.getElementById('total-pedidos').textContent = d.total;
+                document.getElementById('pendientes-count').textContent = d.pendientes;
+                document.getElementById('preparando-count').textContent = d.preparando;
             }
-        }
+        } catch(e) { console.error(e); } finally { isChecking = false; }
+    }
 
-        // ── ACTUALIZAR PÁGINA COMPLETA ──
-        async function updatePage() {
-            try {
-                const refreshStatus = document.getElementById('refresh-status');
-                refreshStatus.classList.add('updating');
-
-                const response = await fetch(window.location.href);
-                const html     = await response.text();
-                const parser   = new DOMParser();
-                const doc      = parser.parseFromString(html, 'text/html');
-
-                const newPedidosContainer = doc.querySelector('#pedidos-container');
-                const newPedidosCards = doc.querySelectorAll('[data-id]');
-
+    /* ── Actualizar página completa ── */
+    async function updatePage() {
+        const badge = document.getElementById('refresh-status');
+        badge.classList.add('updating');
+        try {
+            const r = await fetch(window.location.href);
+            const html = await r.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const newContainer = doc.getElementById('pedidos-container');
+            if (newContainer) {
+                document.getElementById('pedidos-container').innerHTML = newContainer.innerHTML;
+                lucide.createIcons();
                 const newIds = new Set();
-                newPedidosCards.forEach(card => {
-                    const pedidoId = card.dataset.id;
-                    newIds.add(pedidoId);
-                    if (!currentPedidosIds.has(pedidoId)) card.classList.add('nuevo');
-                });
-
-                currentPedidosIds = newIds;
-
-                if (newPedidosContainer) {
-                    document.getElementById('pedidos-container').innerHTML = newPedidosContainer.innerHTML;
-                    lucide.createIcons(); // re-render icons after DOM update
-                }
-
-                document.getElementById('total-pedidos').textContent    = doc.getElementById('total-pedidos').textContent;
-                document.getElementById('pendientes-count').textContent = doc.getElementById('pendientes-count').textContent;
-                document.getElementById('preparando-count').textContent = doc.getElementById('preparando-count').textContent;
-
-                refreshStatus.classList.remove('updating');
-
-            } catch (error) {
-                console.error('Error al actualizar:', error);
-                showToast('Error al actualizar la página', 'error');
+                document.querySelectorAll('[data-id]').forEach(el => newIds.add(el.dataset.id));
+                knownIds = newIds;
             }
-        }
+            ['total-pedidos','pendientes-count','preparando-count'].forEach(id => {
+                const el = doc.getElementById(id);
+                if (el) document.getElementById(id).textContent = el.textContent;
+            });
+            updateElapsed();
+        } catch(e) { showToast('Error al actualizar', 'error'); }
+        finally { badge.classList.remove('updating'); }
+    }
 
-        // ── CONTADOR REGRESIVO ──
-        function updateCountdown() {
-            countdown--;
-            document.getElementById('countdown').textContent = countdown;
-            if (countdown <= 0) {
-                countdown = 5;
-                updatePage();
-            }
-        }
+    /* ── Countdown ── */
+    function tick() {
+        countdown--;
+        document.getElementById('countdown').textContent = countdown;
+        if (countdown <= 0) { countdown = 5; updatePage(); }
+    }
 
-        // ── TIMERS ──
-        setInterval(checkNewPedidos,   CHECK_INTERVAL);
-        setInterval(updateCountdown,   1000);
-        setInterval(updateElapsedTimes, 30000);
+    setInterval(checkNew, 3000);
+    setInterval(tick, 1000);
+    setInterval(updateElapsed, 15000);
+    updateElapsed();
+    setTimeout(checkNew, 1500);
 
-        updateElapsedTimes();
-        setTimeout(checkNewPedidos, 2000);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) { checkNew(); updatePage(); }
+    });
 
-        // ── VISIBILIDAD ──
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) { checkNewPedidos(); updatePage(); }
-        });
-
-        // ── MENSAJE INICIAL ──
-        setTimeout(() => {
-            if (!hasUserInteracted) {
-                showToast('Haz click para activar el sonido de alertas', 'info');
-            }
-        }, 3000);
-    </script>
+    setTimeout(() => {
+        if (!hasInteracted) showToast('Haz click para activar el sonido', 'info');
+    }, 3500);
+</script>
 </body>
 </html>
