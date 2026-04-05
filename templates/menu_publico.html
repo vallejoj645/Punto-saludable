@@ -448,8 +448,8 @@
             <div class="listo-titulo">Tu pedido está listo 🎉</div>
             <div class="listo-mesa" id="listo-mesa-nombre"></div>
             <p class="listo-desc">
-                El mesero ya viene hacia tu mesa con tu pedido.<br>
-                ¡Gracias por tu paciencia!
+                Dirígete al <strong style="color:var(--text)">mostrador</strong> a retirar tu pedido.<br>
+                ¡Gracias por tu paciencia! 🙌
             </p>
             <button class="btn-listo-ok" onclick="cerrarNotificacion()">
                 <i data-lucide="check-circle"></i> ¡Entendido!
@@ -474,7 +474,7 @@
                 </div>
                 <div class="esperando-badge" id="esperando-badge" style="display:none;">
                     <div class="dot-pulse"><span></span><span></span><span></span></div>
-                    Esperando tu pedido…
+                    Preparando tu pedido…
                 </div>
             </div>
         </div>
@@ -633,7 +633,7 @@
 
                 grid.innerHTML = data.map(m => `
                     <button class="mesa-btn" data-id="${m.id}" data-nombre="${m.nombre}" data-numero="${m.numero ?? ''}"
-                            onclick="seleccionarMesa(${m.id}, '${m.nombre}', ${m.numero ?? 'null'})">
+                            onclick="seleccionarMesa(${m.id}, '${m.nombre}', ${m.numero ?? 'null'}, this)">
                         ${m.nombre}
                     </button>
                 `).join('');
@@ -643,17 +643,18 @@
             }
         }
 
-        function seleccionarMesa(id, nombre, numero) {
+        function seleccionarMesa(id, nombre, numero, btn) {
             mesaSeleccionada = { id, nombre, numero };
 
-            // Marcar botón seleccionado
+            // Marcar botón seleccionado usando la referencia explícita (sin event global)
             document.querySelectorAll('.mesa-btn').forEach(b => b.classList.remove('selected'));
-            event.target.classList.add('selected');
+            btn.classList.add('selected');
 
             // Cerrar modal con pequeña pausa para feedback visual
             setTimeout(() => {
                 document.getElementById('mesa-modal-overlay').classList.add('hidden');
                 actualizarChipMesa();
+                guardarEstado();
             }, 280);
         }
 
@@ -807,6 +808,7 @@
                     document.getElementById('success-mesa-num').textContent = mesaSeleccionada.nombre;
                     document.getElementById('success-overlay').classList.add('visible');
                     pedidoEnviado = true;
+                    guardarEstado();
                     iniciarPolling();
                     pedirPermisoNotificacion();
                 } else {
@@ -838,6 +840,45 @@
             document.getElementById('esperando-badge').style.display = 'none';
             detenerPolling();
             actualizarUI();
+            // Limpiar estado persistido (se conserva la mesa para el próximo pedido)
+            localStorage.removeItem('pedidoEnviado');
+            localStorage.removeItem('pedidosNotificados');
+        }
+
+        /* ══════════════════════
+           PERSISTENCIA DE ESTADO (localStorage)
+           Permite que el cliente recargue la página
+           sin perder el seguimiento del pedido
+        ══════════════════════ */
+        function guardarEstado() {
+            if (mesaSeleccionada) {
+                localStorage.setItem('rp_mesa', JSON.stringify(mesaSeleccionada));
+            }
+            localStorage.setItem('rp_pedidoEnviado', pedidoEnviado ? '1' : '0');
+            localStorage.setItem('rp_notificados', JSON.stringify([...pedidosIdsNotificados]));
+        }
+
+        function restaurarEstado() {
+            try {
+                const mesaStr = localStorage.getItem('rp_mesa');
+                const enviado = localStorage.getItem('rp_pedidoEnviado');
+                const notifStr = localStorage.getItem('rp_notificados');
+
+                if (mesaStr) {
+                    mesaSeleccionada = JSON.parse(mesaStr);
+                    actualizarChipMesa();
+                    // Ocultar modal si ya hay mesa seleccionada
+                    document.getElementById('mesa-modal-overlay').classList.add('hidden');
+                }
+                if (notifStr) {
+                    pedidosIdsNotificados = new Set(JSON.parse(notifStr));
+                }
+                if (enviado === '1' && mesaSeleccionada) {
+                    pedidoEnviado = true;
+                    iniciarPolling();
+                    mostrarToast('Rastreando tu pedido anterior 🔔');
+                }
+            } catch(e) { /* si localStorage no está disponible, ignorar */ }
         }
 
         /* ══════════════════════
@@ -861,11 +902,12 @@
                 const r   = await fetch(url);
                 const d   = await r.json();
 
-                if (d.tiene_listos) {
+                if (d.todos_listos) {
                     // Filtrar solo los que no hemos notificado aún
                     const nuevos = d.pedidos_ids_listos.filter(id => !pedidosIdsNotificados.has(id));
                     if (nuevos.length > 0) {
                         nuevos.forEach(id => pedidosIdsNotificados.add(id));
+                        guardarEstado();
                         mostrarNotificacionListo();
                     }
                 }
@@ -900,7 +942,7 @@
             // Notificación del navegador (si hay permiso)
             if (Notification?.permission === 'granted') {
                 const n = new Notification('🍽️ ¡Tu pedido está listo!', {
-                    body: `${mesaSeleccionada.nombre} — El mesero ya va hacia ti.`,
+                    body: `${mesaSeleccionada.nombre} — Ve al mostrador a retirar tu pedido.`,
                     icon: '/static/favicon.ico',
                     tag: 'pedido-listo',
                     requireInteraction: true
@@ -940,6 +982,7 @@
            INIT
         ══════════════════════ */
         cargarMesas();
+        restaurarEstado();
     </script>
 </body>
 </html>
