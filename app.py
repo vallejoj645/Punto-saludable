@@ -1185,7 +1185,13 @@ def dashboard():
     if current_user.rol == 'cocina':
         return redirect(url_for('cocina'))
     
-    mesas = Mesa.query.filter_by(activa=True).order_by(Mesa.numero).all()
+    mesas = Mesa.query.filter(
+        Mesa.activa == True,
+        db.or_(Mesa.nombre_personalizado.is_(None), Mesa.nombre_personalizado != 'Domicilios')
+    ).order_by(
+        db.case((Mesa.numero.is_(None), 1), else_=0),
+        Mesa.numero, Mesa.nombre_personalizado
+    ).all()
     
     # Obtener solo sesiones activas de hoy
     hoy = datetime.now().date()
@@ -1396,7 +1402,7 @@ def api_cocina_pedidos():
     for p in pedidos:
         data.append({
             "id": p.id,
-            "mesa": p.mesa.numero,
+            "mesa": p.mesa.display_name if p.mesa else "?",
             "producto": p.producto,
             "cantidad": p.cantidad,
             "notas": p.notas or "",
@@ -1462,7 +1468,7 @@ def notificaciones_pendientes():
     for p in pedidos:
         data.append({
             'id': p.id,
-            'mesa': p.mesa.numero if p.mesa else None,
+            'mesa': p.mesa.display_name if p.mesa else '?',
             'producto': p.producto,
             'cantidad': p.cantidad,
             'estado_actualizado': p.estado_actualizado.isoformat() if p.estado_actualizado else None
@@ -1630,7 +1636,10 @@ def administrar_mesas():
     # Mostrar todas las mesas excepto Domicilios (se renderiza aparte en el HTML)
     mesas = Mesa.query.filter(
         db.or_(Mesa.nombre_personalizado.is_(None), Mesa.nombre_personalizado != 'Domicilios')
-    ).order_by(Mesa.numero.nullslast(), Mesa.nombre_personalizado).all()
+    ).order_by(
+        db.case((Mesa.numero.is_(None), 1), else_=0),
+        Mesa.numero, Mesa.nombre_personalizado
+    ).all()
     return render_template("administrar_mesas.html", mesas=mesas)
 
 @app.route("/administrar_usuarios", methods=["GET", "POST"])
@@ -1680,7 +1689,7 @@ def verificar_nuevos_pedidos():
         'pedidos': [
             {
                 'id': p.id,
-                'mesa': p.mesa.numero,
+                'mesa': p.mesa.display_name if p.mesa else '?',
                 'producto': p.producto,
                 'cantidad': p.cantidad,
                 'estado': p.estado,
@@ -3484,13 +3493,19 @@ def pedido_publico():
         mesa_num = data.get('mesa')
         notas_generales = data.get('notas', '')
 
-        if not items or not mesa_num:
+        mesa_id_directo = data.get('mesa_id')
+
+        if not items or (not mesa_num and not mesa_id_directo):
             return jsonify({'success': False, 'error': 'Faltan datos del pedido'}), 400
 
-        # Buscar la mesa
-        mesa = Mesa.query.filter_by(numero=int(mesa_num)).first()
+        # Buscar mesa por id directo (mesas con nombre) o por número
+        if mesa_id_directo:
+            mesa = Mesa.query.get(int(mesa_id_directo))
+        else:
+            mesa = Mesa.query.filter_by(numero=int(mesa_num)).first()
+
         if not mesa:
-            return jsonify({'success': False, 'error': f'La mesa {mesa_num} no existe'}), 404
+            return jsonify({'success': False, 'error': 'La mesa no existe'}), 404
 
         # Obtener o crear una sesión activa para la mesa
         sesion = Sesion.query.filter_by(mesa_id=mesa.id, activa=True).first()
@@ -3539,3 +3554,62 @@ def pedido_publico():
         db.session.rollback()
         logger.error(f'Error en pedido_publico: {e}')
         return jsonify({'success': False, 'error': 'Error interno del servidor'}), 500
+
+# =========================
+# API PÚBLICA: MESAS Y ESTADO DE PEDIDOS (para menu_publico)
+# =========================
+
+@app.route('/api/mesas_publicas')
+def api_mesas_publicas():
+    """Lista de mesas activas visibles en el menú público."""
+    mesas = Mesa.query.filter(
+        Mesa.activa == True,
+        db.or_(Mesa.nombre_personalizado.is_(None), Mesa.nombre_personalizado != 'Domicilios')
+    ).order_by(
+        db.case((Mesa.numero.is_(None), 1), else_=0),
+        Mesa.numero, Mesa.nombre_personalizado
+    ).all()
+    return jsonify([{
+        'id': m.id,
+        'nombre': m.display_name,
+        'numero': m.numero
+    } for m in mesas])
+
+
+@app.route('/api/estado_pedidos_mesa')
+def api_estado_pedidos_mesa():
+    """
+    Verifica si hay pedidos 'listo' para una mesa.
+    Parámetros: mesa_id (int) o mesa_numero (int)
+    """
+    mesa_id     = request.args.get('mesa_id', type=int)
+    mesa_numero = request.args.get('mesa_numero', type=int)
+
+    if mesa_id:
+        mesa = Mesa.query.get(mesa_id)
+    elif mesa_numero:
+        mesa = Mesa.query.filter_by(numero=mesa_numero).first()
+    else:
+        return jsonify({'error': 'Falta mesa_id o mesa_numero'}), 400
+
+    if not mesa:
+        return jsonify({'error': 'Mesa no encontrada'}), 404
+
+    hoy = datetime.now().date()
+    pedidos = Pedido.query.filter(
+        Pedido.mesa_id == mesa.id,
+        db.func.date(Pedido.fecha) == hoy,
+        Pedido.pagado == False
+    ).all()
+
+    listos     = [p for p in pedidos if p.estado == 'listo']
+    pendientes = [p for p in pedidos if p.estado in ('pendiente', 'preparando')]
+
+    return jsonify({
+        'mesa':               mesa.display_name,
+        'mesa_id':            mesa.id,
+        'tiene_listos':       len(listos) > 0,
+        'cantidad_listos':    len(listos),
+        'pendientes':         len(pendientes),
+        'pedidos_ids_listos': [p.id for p in listos]
+    })
