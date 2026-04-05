@@ -317,15 +317,15 @@
         ══════════════════════════════════════════ */
         .listo-overlay {
             position: fixed; inset: 0; z-index: 4000;
-            display: flex; align-items: center; justify-content: center;
+            display: none;                   /* JS controla display directamente */
+            align-items: center; justify-content: center;
             padding: 1.5rem;
-            opacity: 0; pointer-events: none;
-            transition: opacity .4s;
+            background: rgba(0,0,0,.88);     /* siempre presente, no en .show */
+            -webkit-backdrop-filter: blur(10px);  /* iOS Safari */
+            backdrop-filter: blur(10px);
         }
         .listo-overlay.show {
-            opacity: 1; pointer-events: all;
-            background: rgba(0,0,0,.85);
-            backdrop-filter: blur(10px);
+            display: flex;
         }
 
         .listo-card {
@@ -646,11 +646,10 @@
         function seleccionarMesa(id, nombre, numero, btn) {
             mesaSeleccionada = { id, nombre, numero };
 
-            // Marcar botón seleccionado usando la referencia explícita (sin event global)
+            // Marcar botón seleccionado usando la referencia explícita
             document.querySelectorAll('.mesa-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
 
-            // Cerrar modal con pequeña pausa para feedback visual
             setTimeout(() => {
                 document.getElementById('mesa-modal-overlay').classList.add('hidden');
                 actualizarChipMesa();
@@ -840,45 +839,39 @@
             document.getElementById('esperando-badge').style.display = 'none';
             detenerPolling();
             actualizarUI();
-            // Limpiar estado persistido (se conserva la mesa para el próximo pedido)
-            localStorage.removeItem('pedidoEnviado');
-            localStorage.removeItem('pedidosNotificados');
+            localStorage.removeItem('rp_pedidoEnviado');
+            localStorage.removeItem('rp_notificados');
         }
 
         /* ══════════════════════
-           PERSISTENCIA DE ESTADO (localStorage)
-           Permite que el cliente recargue la página
-           sin perder el seguimiento del pedido
+           PERSISTENCIA DE ESTADO
+           Si el cliente recarga la página, el polling se reanuda
         ══════════════════════ */
         function guardarEstado() {
-            if (mesaSeleccionada) {
-                localStorage.setItem('rp_mesa', JSON.stringify(mesaSeleccionada));
-            }
-            localStorage.setItem('rp_pedidoEnviado', pedidoEnviado ? '1' : '0');
-            localStorage.setItem('rp_notificados', JSON.stringify([...pedidosIdsNotificados]));
+            try {
+                if (mesaSeleccionada) localStorage.setItem('rp_mesa', JSON.stringify(mesaSeleccionada));
+                localStorage.setItem('rp_pedidoEnviado', pedidoEnviado ? '1' : '0');
+                localStorage.setItem('rp_notificados', JSON.stringify([...pedidosIdsNotificados]));
+            } catch(e) {}
         }
 
         function restaurarEstado() {
             try {
-                const mesaStr = localStorage.getItem('rp_mesa');
-                const enviado = localStorage.getItem('rp_pedidoEnviado');
+                const mesaStr  = localStorage.getItem('rp_mesa');
+                const enviado  = localStorage.getItem('rp_pedidoEnviado');
                 const notifStr = localStorage.getItem('rp_notificados');
-
                 if (mesaStr) {
                     mesaSeleccionada = JSON.parse(mesaStr);
                     actualizarChipMesa();
-                    // Ocultar modal si ya hay mesa seleccionada
                     document.getElementById('mesa-modal-overlay').classList.add('hidden');
                 }
-                if (notifStr) {
-                    pedidosIdsNotificados = new Set(JSON.parse(notifStr));
-                }
+                if (notifStr) pedidosIdsNotificados = new Set(JSON.parse(notifStr));
                 if (enviado === '1' && mesaSeleccionada) {
                     pedidoEnviado = true;
                     iniciarPolling();
                     mostrarToast('Rastreando tu pedido anterior 🔔');
                 }
-            } catch(e) { /* si localStorage no está disponible, ignorar */ }
+            } catch(e) {}
         }
 
         /* ══════════════════════
@@ -903,7 +896,6 @@
                 const d   = await r.json();
 
                 if (d.todos_listos) {
-                    // Filtrar solo los que no hemos notificado aún
                     const nuevos = d.pedidos_ids_listos.filter(id => !pedidosIdsNotificados.has(id));
                     if (nuevos.length > 0) {
                         nuevos.forEach(id => pedidosIdsNotificados.add(id));
@@ -950,15 +942,24 @@
                 n.onclick = () => { window.focus(); n.close(); };
             }
 
-            // Overlay grande
+            // Forzar que la animación del card se repita (ya corrió al cargar el DOM)
+            const overlay = document.getElementById('listo-overlay');
+            const card    = overlay.querySelector('.listo-card');
+            card.style.animation = 'none';
+            card.offsetHeight;   // reflow forzado — hace que el browser "olvide" la animación
+            card.style.animation = '';
+
+            // Mostrar overlay — display:flex directo es más confiable en móvil
+            // que transicionar opacity con backdrop-filter activo
             document.getElementById('listo-mesa-nombre').textContent = mesaSeleccionada.nombre;
-            document.getElementById('listo-overlay').classList.add('show');
+            overlay.classList.add('show');
             document.getElementById('esperando-badge').style.display = 'none';
             detenerPolling();
         }
 
         function cerrarNotificacion() {
-            document.getElementById('listo-overlay').classList.remove('show');
+            const overlay = document.getElementById('listo-overlay');
+            overlay.classList.remove('show');
         }
 
         function pedirPermisoNotificacion() {
