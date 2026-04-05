@@ -3605,10 +3605,15 @@ def api_estado_pedidos_mesa():
     listos     = [p for p in pedidos if p.estado == 'listo']
     pendientes = [p for p in pedidos if p.estado in ('pendiente', 'preparando')]
 
+    # todos_listos: solo True cuando hay ítems listos Y no quedan pendientes/preparando
+    # Esto evita notificar al cliente antes de que todos sus productos estén listos
+    todos_listos = len(listos) > 0 and len(pendientes) == 0
+
     return jsonify({
         'mesa':               mesa.display_name,
         'mesa_id':            mesa.id,
         'tiene_listos':       len(listos) > 0,
+        'todos_listos':       todos_listos,
         'cantidad_listos':    len(listos),
         'pendientes':         len(pendientes),
         'pedidos_ids_listos': [p.id for p in listos]
