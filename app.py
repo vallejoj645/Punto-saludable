@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, date
 import os
 import json
 from sqlalchemy.exc import OperationalError
-from sqlalchemy import text
 from dotenv import load_dotenv
 import sys
 import logging
@@ -79,14 +78,8 @@ class Usuario(UserMixin, db.Model):
 class Mesa(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     numero = db.Column(db.Integer, nullable=True, unique=True)
-    nombre_personalizado = db.Column(db.String(40), nullable=True)
     capacidad = db.Column(db.Integer, default=4)
     activa = db.Column(db.Boolean, default=True)
-
-    @property
-    def display_name(self):
-        """Nombre para mostrar en la UI."""
-        return self.nombre_personalizado if self.nombre_personalizado else f'Mesa {self.numero}'
 
 class Sesion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -664,19 +657,25 @@ def facturar_sesion(sesion_id):
         # Saldo pendiente
         saldo_pendiente = total if estado_pago == 'pendiente' else 0
         
-        # Crear factura (sin sesion_id porque es domicilio)
+        # Crear factura
         factura = Factura(
             numero_consecutivo=numero_consecutivo,
-            sesion_id=sesion.id,  # ✅ ESTA SÍ es una sesión
+            sesion_id=sesion_id,
             subtotal=subtotal,
             iva=iva,
             propina=propina,
             total=total,
-            metodo_pago=metodo_pago,  # ✅ viene del formulario
-            cliente_nombre=cliente_nombre,  # ✅ viene del formulario
+            metodo_pago=metodo_pago,
+            desglose_pago=json.dumps(desglose_pago) if desglose_pago else None,
+            cliente_nombre=cliente_nombre,
             cliente_documento=cliente_documento,
-            notas=notas,       
+            notas=notas,
+            estado_pago=estado_pago,
+            fecha_vencimiento=fecha_vencimiento,
+            fecha_pago_real=fecha_pago_real,
+            saldo_pendiente=saldo_pendiente
         )
+        
         # Actualizar sesión
         sesion.total = total
         sesion.activa = False
@@ -1185,7 +1184,10 @@ def dashboard():
     if current_user.rol == 'cocina':
         return redirect(url_for('cocina'))
     
-    mesas = Mesa.query.filter_by(activa=True).order_by(Mesa.numero).all()
+    mesas = Mesa.query.filter(
+        Mesa.activa == True,
+        db.or_(Mesa.nombre_personalizado.is_(None), Mesa.nombre_personalizado != 'Domicilios')
+    ).order_by(Mesa.numero.nullslast(), Mesa.nombre_personalizado).all()
     
     # Obtener solo sesiones activas de hoy
     hoy = datetime.now().date()
@@ -1341,44 +1343,35 @@ def ver_mesa(mesa_id):
             'total_pendiente': total_pendiente_sesion
         })
     
-    config = ConfiguracionRestaurante.query.first()
-
     return render_template("ver_mesa.html", 
                          mesa=mesa, 
                          pedidos=pedidos_actuales,
                          sesion_activa=sesion_activa,
                          totales_sesion_activa=totales_sesion_activa,
                          sesiones_anteriores=sesiones_con_totales,
-                         current_user=current_user,
-                         config=config)
+                         current_user=current_user)
 
 @app.route("/cocina")
 @login_required
 def cocina():
     hoy = datetime.now().date()
-    
-    pedidos = Pedido.query.filter(
+
+    pedidos_pendientes = Pedido.query.filter(
         db.func.date(Pedido.fecha) == hoy,
         Pedido.estado.in_(['pendiente', 'preparando'])
     ).order_by(Pedido.fecha).all()
 
-    # 🔥 AGRUPAR POR MESA
-    pedidos_por_mesa = {}
-
-    for p in pedidos:
-        mesa_id = p.mesa_id
-
-        if mesa_id not in pedidos_por_mesa:
-            pedidos_por_mesa[mesa_id] = {
-                "mesa": p.mesa,
-                "pedidos": []
-            }
-
-        pedidos_por_mesa[mesa_id]["pedidos"].append(p)
+    # Agrupar por mesa manteniendo el orden de llegada
+    mesas_orden = {}
+    for p in pedidos_pendientes:
+        if p.mesa_id not in mesas_orden:
+            mesas_orden[p.mesa_id] = {'mesa': p.mesa, 'pedidos': []}
+        mesas_orden[p.mesa_id]['pedidos'].append(p)
 
     return render_template(
         "cocina.html",
-        pedidos_por_mesa=pedidos_por_mesa.values(),
+        pedidos=pedidos_pendientes,
+        pedidos_por_mesa=list(mesas_orden.values()),
         now=datetime.now()
     )
 
@@ -1396,7 +1389,7 @@ def api_cocina_pedidos():
     for p in pedidos:
         data.append({
             "id": p.id,
-            "mesa": p.mesa.numero,
+            "mesa": p.mesa.display_name if p.mesa else "?",
             "producto": p.producto,
             "cantidad": p.cantidad,
             "notas": p.notas or "",
@@ -1462,7 +1455,7 @@ def notificaciones_pendientes():
     for p in pedidos:
         data.append({
             'id': p.id,
-            'mesa': p.mesa.numero if p.mesa else None,
+            'mesa': p.mesa.display_name if p.mesa else '?',
             'producto': p.producto,
             'cantidad': p.cantidad,
             'estado_actualizado': p.estado_actualizado.isoformat() if p.estado_actualizado else None
@@ -1570,67 +1563,43 @@ def administrar_mesas():
     
     if request.method == "POST":
         accion = request.form.get("accion")
-
-        # ── Bloqueo global: la mesa Domicilios es del sistema ──
-        mesa_id = request.form.get("mesa_id", type=int)
-        if mesa_id:
-            mesa_check = Mesa.query.get(mesa_id)
-            if mesa_check and mesa_check.nombre_personalizado == 'Domicilios':
-                flash('La mesa Domicilios es del sistema y no puede modificarse.', 'error')
-                return redirect(url_for('administrar_mesas'))
-
+        
         if accion == "agregar":
-            tipo_id              = request.form.get("tipo_id", "numero")
-            capacidad            = request.form.get("capacidad", type=int) or 4
-            nombre_personalizado = (request.form.get("nombre_personalizado") or "").strip() or None
-
-            if tipo_id == "nombre":
-                if not nombre_personalizado:
-                    flash('Debes escribir un nombre para la mesa.', 'error')
-                elif Mesa.query.filter_by(nombre_personalizado=nombre_personalizado).first():
-                    flash(f'Ya existe una mesa llamada "{nombre_personalizado}".', 'error')
-                else:
-                    mesa = Mesa(numero=None, nombre_personalizado=nombre_personalizado, capacidad=capacidad)
-                    db.session.add(mesa)
-                    db.session.commit()
-                    flash(f'Mesa "{nombre_personalizado}" agregada exitosamente.', 'success')
+            numero = request.form.get("numero", type=int)
+            capacidad = request.form.get("capacidad", type=int, default=4)
+            
+            if Mesa.query.filter_by(numero=numero).first():
+                flash(f'La mesa {numero} ya existe', 'error')
             else:
-                numero = request.form.get("numero", type=int)
-                if not numero:
-                    flash('Debes ingresar un número de mesa válido.', 'error')
-                elif Mesa.query.filter_by(numero=numero).first():
-                    flash(f'La mesa #{numero} ya existe.', 'error')
-                else:
-                    mesa = Mesa(numero=numero, nombre_personalizado=None, capacidad=capacidad)
-                    db.session.add(mesa)
-                    db.session.commit()
-                    flash(f'Mesa {numero} agregada exitosamente.', 'success')
-
+                mesa = Mesa(numero=numero, capacidad=capacidad)
+                db.session.add(mesa)
+                db.session.commit()
+                flash(f'Mesa {numero} agregada exitosamente', 'success')
+        
         elif accion == "eliminar":
+            mesa_id = request.form.get("mesa_id", type=int)
             mesa = Mesa.query.get(mesa_id)
             if mesa:
+                # Verificar si tiene pedidos
                 if Pedido.query.filter_by(mesa_id=mesa_id).first():
-                    flash(f'No se puede eliminar "{mesa.display_name}" porque tiene pedidos asociados.', 'error')
+                    flash(f'No se puede eliminar la mesa {mesa.numero} porque tiene pedidos asociados', 'error')
                 else:
-                    nombre = mesa.display_name
                     db.session.delete(mesa)
                     db.session.commit()
-                    flash(f'"{nombre}" eliminada exitosamente.', 'success')
-
+                    flash(f'Mesa {mesa.numero} eliminada exitosamente', 'success')
+        
         elif accion == "toggle":
+            mesa_id = request.form.get("mesa_id", type=int)
             mesa = Mesa.query.get(mesa_id)
             if mesa:
                 mesa.activa = not mesa.activa
                 db.session.commit()
                 estado = "activada" if mesa.activa else "desactivada"
-                flash(f'"{mesa.display_name}" {estado}.', 'success')
-
+                flash(f'Mesa {mesa.numero} {estado}', 'success')
+        
         return redirect(url_for('administrar_mesas'))
-
-    # Mostrar todas las mesas excepto Domicilios (se renderiza aparte en el HTML)
-    mesas = Mesa.query.filter(
-        db.or_(Mesa.nombre_personalizado.is_(None), Mesa.nombre_personalizado != 'Domicilios')
-    ).order_by(Mesa.numero.nullslast(), Mesa.nombre_personalizado).all()
+    
+    mesas = Mesa.query.order_by(Mesa.numero).all()
     return render_template("administrar_mesas.html", mesas=mesas)
 
 @app.route("/administrar_usuarios", methods=["GET", "POST"])
@@ -1680,7 +1649,7 @@ def verificar_nuevos_pedidos():
         'pedidos': [
             {
                 'id': p.id,
-                'mesa': p.mesa.numero,
+                'mesa': p.mesa.display_name if p.mesa else '?',
                 'producto': p.producto,
                 'cantidad': p.cantidad,
                 'estado': p.estado,
@@ -2471,28 +2440,7 @@ def reporte_financiero():
 def init_db():
     with app.app_context():
         db.create_all()
-
-        # Migración segura de la tabla mesa
-        try:
-            with db.engine.connect() as conn:
-                cols = [r[1] for r in conn.execute(text("PRAGMA table_info(mesa)")).fetchall()]
-                if 'nombre_personalizado' not in cols:
-                    conn.execute(text("ALTER TABLE mesa ADD COLUMN nombre_personalizado VARCHAR(40)"))
-                    conn.commit()
-                    print("✅ Columna nombre_personalizado agregada")
-                info = conn.execute(text("PRAGMA table_info(mesa)")).fetchall()
-                numero_notnull = next((r[3] for r in info if r[1] == 'numero'), 0)
-                if numero_notnull == 1:
-                    print("Recreando tabla mesa para quitar NOT NULL en numero...")
-                    conn.execute(text("CREATE TABLE mesa_nueva (id INTEGER PRIMARY KEY, numero INTEGER, nombre_personalizado VARCHAR(40), capacidad INTEGER DEFAULT 4, activa BOOLEAN DEFAULT 1)"))
-                    conn.execute(text("INSERT INTO mesa_nueva (id, numero, nombre_personalizado, capacidad, activa) SELECT id, numero, nombre_personalizado, capacidad, activa FROM mesa"))
-                    conn.execute(text("DROP TABLE mesa"))
-                    conn.execute(text("ALTER TABLE mesa_nueva RENAME TO mesa"))
-                    conn.commit()
-                    print("✅ Tabla mesa migrada correctamente")
-        except Exception as e:
-            print(f"Error en migracion de mesa: {e}")
-
+        
         # Crear usuario admin si no existe
         if not Usuario.query.filter_by(username='admin').first():
             admin = Usuario(username='admin', nombre='Administrador', rol='admin')
@@ -2516,12 +2464,6 @@ def init_db():
             for i in range(1, 11):
                 mesa = Mesa(numero=i, capacidad=4)
                 db.session.add(mesa)
-
-        # Crear mesa Domicilios si no existe
-        if not Mesa.query.filter_by(nombre_personalizado='Domicilios').first():
-            domicilios = Mesa(numero=None, nombre_personalizado='Domicilios', capacidad=9999, activa=True)
-            db.session.add(domicilios)
-            print("✅ Mesa Domicilios creada")
         
         db.session.commit()
         print("Base de datos inicializada correctamente")
@@ -3416,28 +3358,7 @@ else:
         try:
             db.create_all()
             print("✅ Tablas creadas/verificadas")
-
-            # Migración segura para nombre_personalizado
-            try:
-                with db.engine.connect() as conn:
-                    cols = [r[1] for r in conn.execute(text("PRAGMA table_info(mesa)")).fetchall()]
-                    if 'nombre_personalizado' not in cols:
-                        conn.execute(text("ALTER TABLE mesa ADD COLUMN nombre_personalizado VARCHAR(40)"))
-                        conn.commit()
-                        print("✅ Columna nombre_personalizado agregada")
-                    info = conn.execute(text("PRAGMA table_info(mesa)")).fetchall()
-                    numero_notnull = next((r[3] for r in info if r[1] == 'numero'), 0)
-                    if numero_notnull == 1:
-                        print("Recreando tabla mesa para quitar NOT NULL en numero...")
-                        conn.execute(text("CREATE TABLE mesa_nueva (id INTEGER PRIMARY KEY, numero INTEGER, nombre_personalizado VARCHAR(40), capacidad INTEGER DEFAULT 4, activa BOOLEAN DEFAULT 1)"))
-                        conn.execute(text("INSERT INTO mesa_nueva (id, numero, nombre_personalizado, capacidad, activa) SELECT id, numero, nombre_personalizado, capacidad, activa FROM mesa"))
-                        conn.execute(text("DROP TABLE mesa"))
-                        conn.execute(text("ALTER TABLE mesa_nueva RENAME TO mesa"))
-                        conn.commit()
-                        print("✅ Tabla mesa migrada correctamente")
-            except Exception as e:
-                print(f"Error en migracion de mesa: {e}")
-
+            
             # Crear admin si no existe
             if not Usuario.query.filter_by(username='admin').first():
                 admin = Usuario(username='admin', nombre='Administrador', rol='admin')
@@ -3457,13 +3378,6 @@ else:
                 print("✅ Usuarios por defecto creados")
             else:
                 print("ℹ️ Usuarios ya existen")
-
-            # Crear mesa Domicilios si no existe
-            if not Mesa.query.filter_by(nombre_personalizado='Domicilios').first():
-                domicilios = Mesa(numero=None, nombre_personalizado='Domicilios', capacidad=9999, activa=True)
-                db.session.add(domicilios)
-                db.session.commit()
-                print("✅ Mesa Domicilios creada")
                 
         except Exception as e:
             print(f"⚠️ Error en inicialización: {e}")
