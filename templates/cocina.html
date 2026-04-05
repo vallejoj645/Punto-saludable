@@ -3,1355 +3,1071 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Restaurante</title>
+    <title>Cocina - Restaurante</title>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- CSS del sistema -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* ─── VARIABLES ─────────────────────────────────── */
+        :root {
+            --bg:        #080808;
+            --surface:   #111111;
+            --surface2:  #1a1a1a;
+            --border:    #252525;
+            --green:     #22c55e;
+            --green-dim: #16a34a;
+            --green-glow:rgba(34,197,94,.18);
+            --amber:     #f59e0b;
+            --red:       #ef4444;
+            --cyan:      #06b6d4;
+            --text:      #f0f0f0;
+            --muted:     #6b7280;
+            --card-shadow: 0 4px 24px rgba(0,0,0,.6);
         }
+
+        /* ─── RESET / BASE ──────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f8fafc;
-            color: #1e293b;
-            line-height: 1.6;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
         }
 
-        /* Navbar */
+        /* subtle grid texture */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(34,197,94,.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(34,197,94,.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ─── NAVBAR ────────────────────────────────────── */
         .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: rgba(8,8,8,.95);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
             position: sticky;
             top: 0;
-            z-index: 1000;
+            z-index: 100;
         }
 
         .nav-container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 1rem 1.5rem;
+            padding: 0 1.5rem;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            height: 60px;
         }
 
         .nav-brand {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: white;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--green);
+            text-decoration: none;
+            letter-spacing: -.02em;
         }
+
+        .nav-brand svg { stroke: var(--green); }
 
         .nav-menu {
             display: flex;
-            gap: 0.5rem;
             align-items: center;
-            flex-wrap: wrap;
+            gap: 1.5rem;
         }
 
         .nav-link {
-            color: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            color: var(--muted);
             text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            transition: all 0.3s;
+            font-size: .9rem;
             font-weight: 500;
-            font-size: 0.9rem;
+            transition: color .2s;
         }
 
-        .nav-link:hover {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
+        .nav-link:hover { color: var(--text); }
+        .nav-link.active { color: var(--green); }
+        .nav-link svg { width: 15px; height: 15px; }
 
-        .nav-link.active {
-            background: rgba(255,255,255,0.25);
-            color: white;
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            color: var(--muted);
+            font-size: .9rem;
         }
 
         .nav-logout {
-            background: rgba(239, 68, 68, 0.9);
+            border: 1px solid var(--border);
+            padding: .35rem .85rem;
+            border-radius: .4rem;
+            color: var(--muted) !important;
         }
 
         .nav-logout:hover {
-            background: rgba(239, 68, 68, 1);
+            border-color: var(--red);
+            color: var(--red) !important;
         }
 
-        .nav-user {
-            color: white;
-            font-size: 0.9rem;
-            padding: 0.5rem 1rem;
-            background: rgba(255,255,255,0.15);
-            border-radius: 0.5rem;
-            backdrop-filter: blur(10px);
-        }
-
-        /* Alert */
-        .alert {
-            padding: 1rem;
-            border-radius: 0.75rem;
-            margin-bottom: 1rem;
-            position: relative;
-            animation: slideDown 0.3s ease-out;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .alert-success {
-            background: #d1fae5;
-            color: #065f46;
-            border-left: 4px solid #10b981;
-        }
-
-        .alert-error {
-            background: #fee2e2;
-            color: #991b1b;
-            border-left: 4px solid #ef4444;
-        }
-
-        .alert-close {
-            position: absolute;
-            right: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            opacity: 0.5;
-        }
-
-        .alert-close:hover {
-            opacity: 1;
-        }
-
-        /* Container */
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem 1.5rem;
-        }
-
-        /* Dashboard Header */
-        .dashboard-header {
+        /* ─── HEADER ─────────────────────────────────────── */
+        .cocina-header {
             text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .dashboard-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            color: #1e293b;
-        }
-
-        .subtitle {
-            color: #64748b;
-            font-size: 1.1rem;
-        }
-
-        /* Sección de Accesos Rápidos */
-        .quick-access-section {
-            margin-bottom: 2.5rem;
-        }
-
-        .section-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 3px solid #667eea;
-            display: inline-block;
-        }
-
-        .quick-access-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .quick-access-card {
-            background: white;
+            padding: 2.5rem 2rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 1rem;
-            padding: 1.5rem;
-            text-align: center;
-            text-decoration: none;
-            color: #1e293b;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: all 0.3s;
-            border: 2px solid transparent;
+            margin-bottom: 1.5rem;
             position: relative;
             overflow: hidden;
         }
 
-        .quick-access-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-            border-color: #667eea;
-        }
-
-        .quick-access-icon {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .quick-access-title {
-            font-weight: 700;
-            font-size: 0.95rem;
-            color: #1e293b;
-            margin-bottom: 0.25rem;
-        }
-
-        .quick-access-desc {
-            font-size: 0.75rem;
-            color: #64748b;
-        }
-
-        /* Badge de notificación */
-        .notification-badge {
+        .cocina-header::after {
+            content: '';
             position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            background: #ef4444;
-            color: white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            inset: 0;
+            background: radial-gradient(ellipse 60% 80% at 50% 110%, var(--green-glow), transparent);
+            pointer-events: none;
+        }
+
+        .cocina-header-icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 1rem;
+            background: var(--green-glow);
+            border: 1px solid var(--green);
+            border-radius: .75rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.75rem;
-            font-weight: bold;
-            animation: pulse 2s infinite;
         }
+
+        .cocina-header-icon svg { stroke: var(--green); width: 28px; height: 28px; }
+
+        .cocina-header h1 {
+            font-family: 'Space Mono', monospace;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -.04em;
+            margin-bottom: .4rem;
+        }
+
+        .cocina-header h1 span { color: var(--green); }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 1rem;
+        }
+
+        /* ─── STATUS BAR ─────────────────────────────────── */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 1.1rem 1.5rem;
+            border-radius: .85rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+        }
+
+        .status-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: .5rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .status-icon svg { width: 18px; height: 18px; stroke: var(--green); }
+
+        .status-label {
+            font-size: .78rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        .status-value {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1;
+        }
+
+        /* probar sonido */
+        .btn-sound {
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .45rem .9rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: .5rem;
+            color: var(--muted);
+            font-size: .82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .btn-sound:hover {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .btn-sound svg { width: 14px; height: 14px; }
+
+        /* refresh indicator */
+        .refresh-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .5rem 1rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: .5rem;
+            font-family: 'Space Mono', monospace;
+            font-size: .8rem;
+            color: var(--muted);
+        }
+
+        .refresh-indicator svg { width: 14px; height: 14px; stroke: var(--green); }
+
+        .refresh-indicator.updating {
+            border-color: var(--amber);
+            color: var(--amber);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .refresh-indicator.updating svg { stroke: var(--amber); }
 
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            0%, 100% { opacity: 1; }
+            50% { opacity: .6; }
         }
 
-        /* Colores para diferentes tipos de accesos */
-        .qa-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white !important; }
-        .qa-primary .quick-access-title,
-        .qa-primary .quick-access-desc { color: white !important; }
-
-        .qa-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white !important; }
-        .qa-success .quick-access-title,
-        .qa-success .quick-access-desc { color: white !important; }
-
-        .qa-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white !important; }
-        .qa-warning .quick-access-title,
-        .qa-warning .quick-access-desc { color: white !important; }
-
-        .qa-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white !important; }
-        .qa-danger .quick-access-title,
-        .qa-danger .quick-access-desc { color: white !important; }
-
-        .qa-info { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white !important; }
-        .qa-info .quick-access-title,
-        .qa-info .quick-access-desc { color: white !important; }
-
-        .qa-purple { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white !important; }
-        .qa-purple .quick-access-title,
-        .qa-purple .quick-access-desc { color: white !important; }
-
-        /* Divider */
-        .divider {
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
-            margin: 2rem 0;
+        /* ─── PEDIDOS GRID ───────────────────────────────── */
+        .pedidos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 0.7rem;
         }
 
-        /* Leyenda de Estados */
-        .estados-leyenda {
-            background: white;
+        /* ─── PEDIDO CARD ────────────────────────────────── */
+        .pedido-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 1rem;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .estados-leyenda h3 {
-            font-size: 1rem;
-            margin-bottom: 1rem;
-            color: #1e293b;
-            font-weight: 700;
-        }
-
-        .leyenda-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 0.75rem;
-        }
-
-        .leyenda-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            padding: 0.8rem;
             font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .leyenda-color {
-            width: 24px;
-            height: 24px;
-            border-radius: 0.25rem;
-            border: 2px solid rgba(0,0,0,0.1);
-        }
-
-        .color-libre { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); }
-        .color-pendiente { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
-        .color-preparando { background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%); }
-        .color-listo { background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%); }
-        .color-entregado { background: linear-gradient(135deg, #86efac 0%, #4ade80 100%); }
-
-        /* Mesas Grid */
-        .mesas-section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
-        .mesas-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 1rem;
-        }
-
-        .mesa-card {
-            background: white;
-            border-radius: 0.75rem;
-            padding: 1rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: all 0.3s;
-            border: 2px solid transparent;
+            box-shadow: var(--card-shadow);
+            transition: transform .25s, box-shadow .25s, border-color .25s;
             position: relative;
+            overflow: hidden;
         }
 
-        .mesa-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        /* left accent stripe */
+        .pedido-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--amber);
+            border-radius: 1rem 0 0 1rem;
         }
 
-        /* ESTADOS DE COCINA CON COLORES DISTINTOS */
-        
-        /* Mesa libre - Verde suave */
-        .mesa-card.mesa-libre {
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-            border-left: 5px solid #10b981;
+        .pedido-card.estado-preparando::before { background: var(--cyan); }
+
+        .pedido-card.nuevo {
+            animation: slideInBounce .5s ease-out, highlightDark 2s ease-in-out;
+            border-color: var(--amber);
         }
 
-        /* Pedidos pendientes - Amarillo */
-        .mesa-card.mesa-pendiente {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            border-left: 5px solid #eab308;
-            animation: pulseYellow 2s infinite;
+        @keyframes slideInBounce {
+            0%   { opacity: 0; transform: translateY(20px) scale(.95); }
+            60%  { transform: translateY(-6px) scale(1.01); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        @keyframes pulseYellow {
-            0%, 100% { box-shadow: 0 2px 8px rgba(234, 179, 8, 0.3); }
-            50% { box-shadow: 0 4px 16px rgba(234, 179, 8, 0.5); }
+        @keyframes highlightDark {
+            0%, 100% { background: var(--surface); }
+            50%       { background: #1c1700; }
         }
 
-        /* Pedidos en preparación - Azul */
-        .mesa-card.mesa-preparando {
-            background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%);
-            border-left: 5px solid #3b82f6;
-            animation: pulseBlue 2s infinite;
+        .pedido-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,.7), 0 0 0 1px var(--border);
         }
 
-        @keyframes pulseBlue {
-            0%, 100% { box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); }
-            50% { box-shadow: 0 4px 16px rgba(59, 130, 246, 0.6); }
-        }
-
-        /* Pedidos listos - Naranja/Rojo */
-        .mesa-card.mesa-listo {
-            background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
-            border-left: 5px solid #f97316;
-            animation: pulseOrange 1.5s infinite;
-        }
-
-        @keyframes pulseOrange {
-            0%, 100% { box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3); }
-            50% { box-shadow: 0 4px 16px rgba(249, 115, 22, 0.6); }
-        }
-
-        /* Todos entregados - Verde intenso */
-        .mesa-card.mesa-entregado {
-            background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
-            border-left: 5px solid #16a34a;
-        }
-
-        .mesa-header {
+        /* ─── CARD HEADER ────────────────────────────────── */
+        .pedido-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.75rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid rgba(0,0,0,0.1);
+            align-items: flex-start;
+            margin-bottom: 1.1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
         }
 
-        .mesa-header h3 {
-            font-size: 1.3rem;
-            color: #1e293b;
+        .pedido-mesa {
+            font-size: 1.1rem;
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            color: var(--green);
+            line-height: 1;
         }
 
-        .mesa-info-compact {
+        .pedido-tiempo {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
-            margin-bottom: 0.75rem;
-            font-size: 0.85rem;
+            align-items: flex-end;
+            gap: .2rem;
         }
 
-        .info-row {
+        .tiempo-hora {
+            display: flex;
+            align-items: center;
+            gap: .3rem;
+            font-family: 'Space Mono', monospace;
+            font-size: .9rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .tiempo-hora svg { width: 13px; height: 13px; stroke: var(--muted); }
+
+        .tiempo-transcurrido {
+            font-size: .72rem;
+            color: var(--muted);
+        }
+
+        /* ─── PRODUCTO ───────────────────────────────────── */
+        .pedido-producto {
+            font-size: 0.95rem;
+            margin-bottom: 0.3rem;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .pedido-cantidad {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2rem;
+            height: 2rem;
+            padding: 0 .5rem;
+            background: var(--green);
+            color: #000;
+            border-radius: .4rem;
+            font-family: 'Space Mono', monospace;
+            font-size: .85rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* ─── NOTAS ──────────────────────────────────────── */
+        .pedido-notas {
+            padding: 0.4rem;
+            font-size: 0.75rem;
+            background: rgba(245,158,11,.08);
+            border: 1px solid rgba(245,158,11,.3);
+            border-radius: .6rem;
+            margin: .85rem 0;
+        }
+        .pedido-card {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .pedido-notas-header {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            color: var(--amber);
+            font-size: .78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: .4rem;
+        }
+
+        .pedido-notas-header svg { width: 13px; height: 13px; stroke: var(--amber); }
+
+        .pedido-notas p {
+            color: #d1a554;
+            font-size: .9rem;
+        }
+
+        /* ─── FOOTER DEL CARD ────────────────────────────── */
+        .pedido-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-top: .85rem;
+            padding-top: .85rem;
+            border-top: 1px solid var(--border);
+            font-size: .85rem;
         }
 
-        .info-label {
-            color: #475569;
-            font-weight: 600;
-        }
-
-        .info-value {
-            font-weight: 700;
-            color: #1e293b;
-        }
-
-        .sesion-tiempo {
-            background: rgba(255,255,255,0.7);
-            padding: 0.35rem 0.6rem;
-            border-radius: 0.4rem;
-            font-size: 0.75rem;
-            color: #475569;
-            text-align: center;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-
-        /* Estado del pedido badge */
-        .estado-cocina-badge {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
+        .pedido-mesero {
             display: flex;
             align-items: center;
-            gap: 0.25rem;
+            gap: .35rem;
+            color: var(--muted);
         }
 
-        .estado-libre {
-            background: #10b981;
-            color: white;
+        .pedido-mesero svg { width: 14px; height: 14px; stroke: var(--muted); }
+
+        /* estado badges */
+        .estado-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            padding: .3rem .75rem;
+            border-radius: .4rem;
+            font-size: .75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .04em;
         }
+
+        .estado-badge svg { width: 12px; height: 12px; }
 
         .estado-pendiente {
-            background: #eab308;
-            color: white;
+            background: rgba(239,68,68,.12);
+            color: #f87171;
+            border: 1px solid rgba(239,68,68,.25);
         }
+
+        .estado-pendiente svg { stroke: #f87171; }
 
         .estado-preparando {
-            background: #3b82f6;
-            color: white;
+            background: rgba(6,182,212,.12);
+            color: var(--cyan);
+            border: 1px solid rgba(6,182,212,.25);
         }
 
-        .estado-listo {
-            background: #f97316;
-            color: white;
-        }
+        .estado-preparando svg { stroke: var(--cyan); }
 
-        .estado-entregado {
-            background: #16a34a;
-            color: white;
-        }
-
-        .badge {
-            padding: 0.35rem 0.85rem;
-            border-radius: 1rem;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .badge-info {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .badge-success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .badge-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .badge-secondary {
-            background: #e2e8f0;
-            color: #64748b;
-        }
-
-        .mesa-actions {
+        /* ─── BOTONES DE ACCIÓN ──────────────────────────── */
+        .pedido-actions {
+            margin-top: 1.1rem;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.4rem;
-            margin-top: 0.75rem;
+            gap: .5rem;
         }
 
-        .btn {
-            display: inline-block;
-            padding: 0.5rem 0.75rem;
-            border: none;
-            border-radius: 0.5rem;
-            font-size: 0.8rem;
-            font-weight: 600;
+        .btn-cocina {
+            padding: .4rem .6rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: .65rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
             text-decoration: none;
-            text-align: center;
+            transition: all .2s;
+            border: none;
             cursor: pointer;
-            transition: all 0.3s;
+            letter-spacing: .01em;
         }
 
-        .btn-block {
-            grid-column: 1 / -1;
+        .btn-cocina svg { width: 16px; height: 16px; }
+
+        /* comenzar a preparar */
+        .btn-warning {
+            background: rgba(245,158,11,.15);
+            color: var(--amber);
+            border: 1px solid rgba(245,158,11,.4);
         }
 
-        .btn-primary {
-            background: #667eea;
-            color: white;
+        .btn-warning:hover {
+            background: rgba(245,158,11,.25);
+            border-color: var(--amber);
+            box-shadow: 0 0 18px rgba(245,158,11,.2);
         }
 
-        .btn-primary:hover {
-            background: #5568d3;
-        }
+        .btn-warning svg { stroke: var(--amber); }
 
-        .btn-secondary {
-            background: #64748b;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #475569;
-        }
-
+        /* marcar como listo */
         .btn-success {
-            background: #10b981;
-            color: white;
+            background: rgba(34,197,94,.15);
+            color: var(--green);
+            border: 1px solid rgba(34,197,94,.4);
         }
 
         .btn-success:hover {
-            background: #059669;
+            background: rgba(34,197,94,.25);
+            border-color: var(--green);
+            box-shadow: 0 0 18px var(--green-glow);
         }
 
-        .btn-sm {
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-        }
+        .btn-success svg { stroke: var(--green); }
 
+        /* ─── EMPTY STATE ────────────────────────────────── */
         .empty-state {
             text-align: center;
-            padding: 4rem 1rem;
-            color: #64748b;
+            padding: 5rem 2rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+        }
+
+        .empty-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 1.5rem;
+            background: var(--green-glow);
+            border: 1px solid rgba(34,197,94,.3);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .empty-icon svg { stroke: var(--green); width: 34px; height: 34px; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-8px); }
         }
 
         .empty-state h2 {
+            font-family: 'Space Mono', monospace;
             font-size: 1.5rem;
-            margin-bottom: 0.5rem;
+            color: var(--text);
+            margin-bottom: .5rem;
         }
 
-        /* Responsive */
+        .text-muted { color: var(--muted); }
+
+        /* ─── TOAST ──────────────────────────────────────── */
+        .notification-toast {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--surface);
+            border: 1px solid var(--green);
+            box-shadow: 0 8px 40px rgba(0,0,0,.6), 0 0 20px var(--green-glow);
+            color: var(--text);
+            padding: 1rem 1.4rem;
+            border-radius: .75rem;
+            display: none;
+            align-items: center;
+            gap: .75rem;
+            z-index: 2000;
+            animation: slideInRight .4s ease-out;
+            min-width: 260px;
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(110%); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        .notification-toast.show { display: flex; }
+
+        .notification-icon svg { width: 20px; height: 20px; stroke: var(--green); }
+
+        .notification-text { font-weight: 600; font-size: .9rem; }
+
+        /* ─── RESPONSIVE ─────────────────────────────────── */
         @media (max-width: 768px) {
-            .nav-container {
+            .cocina-header h1 { font-size: 1.6rem; }
+
+            .status-bar {
                 flex-direction: column;
-                gap: 1rem;
+                align-items: stretch;
             }
 
-            .nav-menu {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
+            .pedidos-grid { grid-template-columns: 1fr; }
 
-            .dashboard-header h1 {
-                font-size: 2rem;
-            }
-
-            .quick-access-grid {
-                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            }
-
-            .mesas-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .mesa-actions {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-            }
-
-            .leyenda-grid {
-                grid-template-columns: 1fr;
+            .notification-toast {
+                right: 12px;
+                left: 12px;
+                top: 72px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
+    <!-- ── NAVBAR ── -->
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-brand">Punto-Saludable Manager</div>
-
+            <a href="{{ url_for('dashboard') }}" class="nav-brand">
+                <i data-lucide="utensils"></i>
+                Restaurante Manager
+            </a>
             <div class="nav-menu">
-                <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
-
-                {% if current_user.rol == 'cocina' %}
-                    <a href="{{ url_for('cocina') }}" class="nav-link"> Cocina</a>
-                    <a href="{{ url_for('lista_domicilios') }}" class="nav-link">Domicilios</a>
-
-                {% else %}
-                    <a href="{{ url_for('historial') }}" class="nav-link">Historial</a>
-                    <a href="{{ url_for('lista_facturas') }}" class="nav-link">Facturas</a>
-                    <a href="{{ url_for('lista_domicilios') }}" class="nav-link">Domicilios</a>
-                    <a href="{{ url_for('nuevo_domicilio') }}" class="nav-link">Nuevo Domicilio</a>
-                {% endif %}
-
-                {% if current_user.rol == 'admin' %}
-                    <a href="{{ url_for('lista_gastos') }}" class="nav-link">Gastos</a>
-                    <a href="{{ url_for('reporte_financiero') }}" class="nav-link">Reportes</a>
-                    <a href="{{ url_for('administrar_menu') }}" class="nav-link">Menú</a>
-                    <a href="{{ url_for('administrar_mesas') }}" class="nav-link">Mesas</a>
-                    <a href="{{ url_for('administrar_usuarios') }}" class="nav-link"> Usuarios</a>
-                    <a href="{{ url_for('configuracion_restaurante') }}" class="nav-link">⚙️ Config</a>
-                {% endif %}
-
+                <a href="{{ url_for('cocina') }}" class="nav-link active">
+                    <i data-lucide="chef-hat"></i> Cocina
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="nav-link">
+                    <i data-lucide="bar-chart-2"></i> Dashboard
+                </a>
                 <span class="nav-user">
-                    👤 {{ current_user.nombre }} ({{ current_user.rol|title }})
+                    <i data-lucide="user" style="width:14px;height:14px;"></i>
+                    {{ current_user.nombre }}
                 </span>
-
                 <a href="{{ url_for('logout') }}" class="nav-link nav-logout">Salir</a>
             </div>
         </div>
     </nav>
 
-
     <div class="container">
-        <!-- Alerts -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">
-                    {{ message }}
-                    <button class="alert-close" onclick="this.parentElement.remove()">×</button>
-                </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
 
-        <!-- Dashboard Header -->
-        <div class="dashboard-header">
-            <h1>Panel de Control</h1>
-            <p class="subtitle">
-                Hoy: {{ now.strftime('%d/%m/%Y') if now else '' }} | 
-                {% if current_user.rol == 'admin' %}Administrador{% elif current_user.rol == 'mesero' %}Mesero{% else %}Cocina{% endif %}
-            </p>
-        </div>
-
-        <!-- SECCIÓN: Accesos Rápidos para ADMINISTRADORES -->
-        {% if current_user.rol == 'admin' %}
-        
-        <!-- Control Financiero -->
-        <div class="quick-access-section">
-            <h2 class="section-title">Control Financiero</h2>
-            <div class="quick-access-grid">
-                <a href="{{ url_for('cuentas_por_pagar') }}" class="quick-access-card qa-danger">
-                    <div class="quick-access-title">Cuentas por Pagar</div>
-                    <div class="quick-access-desc">Deudas con proveedores</div>
-                </a>
-
-                <a href="{{ url_for('cuentas_por_cobrar') }}" class="quick-access-card qa-success">
-                    
-                    <div class="quick-access-title">Cuentas por Cobrar</div>
-                    <div class="quick-access-desc">Deudas de clientes</div>
-                </a>
-
-                <a href="{{ url_for('lista_presupuestos') }}" class="quick-access-card qa-warning">
-                    
-                    <div class="quick-access-title">Presupuestos</div>
-                    <div class="quick-access-desc">Límites de gasto</div>
-                </a>
-
-                <a href="{{ url_for('reporte_financiero') }}" class="quick-access-card qa-info">
-                    
-                    <div class="quick-access-title">Reporte Financiero</div>
-                    <div class="quick-access-desc">Ingresos vs Gastos</div>
-                </a>
+        <!-- ── HEADER ── -->
+        <div class="cocina-header">
+            <div class="cocina-header-icon">
+                <i data-lucide="chef-hat"></i>
             </div>
+            <h1>Panel de <span>Cocina</span></h1>
+            <p class="subtitle">Pedidos pendientes y en preparación</p>
         </div>
 
-        <div class="divider"></div>
+        <!-- ── STATUS BAR ── -->
+        <div class="status-bar">
 
-        <!-- Gestión de Gastos e Ingresos -->
-        <div class="quick-access-section">
-            <h2 class="section-title">Gestión de Gastos e Ingresos</h2>
-            <div class="quick-access-grid">
-                <a href="{{ url_for('lista_gastos') }}" class="quick-access-card qa-danger">
-                    
-                    <div class="quick-access-title">Gestión de Gastos</div>
-                    <div class="quick-access-desc">Registrar y consultar egresos</div>
-                </a>
-
-                <a href="{{ url_for('lista_proveedores') }}" class="quick-access-card">
-                    
-                    <div class="quick-access-title">Proveedores</div>
-                    <div class="quick-access-desc">Base de datos de proveedores</div>
-                </a>
-
-                <a href="{{ url_for('lista_facturas') }}" class="quick-access-card qa-info">
-                    
-                    <div class="quick-access-title">Facturas</div>
-                    <div class="quick-access-desc">Consultar facturas emitidas</div>
-                </a>
-
-                <a href="{{ url_for('historial') }}" class="quick-access-card qa-warning">
-                    
-                    <div class="quick-access-title">Historial</div>
-                    <div class="quick-access-desc">Ver sesiones y ventas</div>
-                </a>
+            <div class="status-item">
+                <div class="status-icon"><i data-lucide="clipboard-list"></i></div>
+                <div>
+                    <div class="status-label">Total Pedidos</div>
+                    <div class="status-value" id="total-pedidos">{{ pedidos|length }}</div>
+                </div>
+                <button onclick="playAlertSound(); showToast('Probando sonido', 'info')"
+                        class="btn-sound">
+                    <i data-lucide="volume-2"></i> Probar Sonido
+                </button>
             </div>
-        </div>
 
-        <div class="divider"></div>
-
-        <!-- Configuración del Restaurante -->
-        <div class="quick-access-section">
-            <h2 class="section-title">⚙️ Configuración del Restaurante</h2>
-            <div class="quick-access-grid">
-                <a href="{{ url_for('administrar_menu') }}" class="quick-access-card qa-purple">
-                    
-                    <div class="quick-access-title">Gestionar Menú</div>
-                    <div class="quick-access-desc">Editar platillos y precios</div>
-                </a>
-
-                <a href="{{ url_for('administrar_mesas') }}" class="quick-access-card">
-                    
-                    <div class="quick-access-title">Gestionar Mesas</div>
-                    <div class="quick-access-desc">Configurar mesas</div>
-                </a>
-
-                <a href="{{ url_for('lista_consumos_internos') }}" class="quick-access-card qa-danger">
-                    
-                    <div class="quick-access-title">Consumo Interno</div>
-                    <div class="quick-access-desc">Registrar artículos retirados para uso interno</div>
-                </a>
-
-                <a href="{{ url_for('administrar_usuarios') }}" class="quick-access-card">
-                    
-                    <div class="quick-access-title">Usuarios</div>
-                    <div class="quick-access-desc">Gestionar empleados</div>
-                </a>
-
-                <a href="{{ url_for('configuracion_restaurante') }}" class="quick-access-card">
-                    
-                    <div class="quick-access-title">Configuración</div>
-                    <div class="quick-access-desc">Datos del restaurante</div>
-                </a>
-
-                <a href="{{ url_for('menu_publico') }}" class="quick-access-card qa-primary" target="_blank">
-                    
-                    <div class="quick-access-title">Menú Público</div>
-                    <div class="quick-access-desc">Ver menú de clientes</div>
-                </a>
-                
-            </div>
-        </div>
-
-        <div class="divider"></div>
-        {% endif %}
-
-        <!-- SECCIÓN: Accesos Rápidos para MESEROS -->
-        {% if current_user.rol == 'mesero' %}
-        <div class="quick-access-section">
-            <h2 class="section-title"> Accesos Rápidos - Mesero</h2>
-            <div class="quick-access-grid">
-                <a href="{{ url_for('historial') }}" class="quick-access-card qa-warning">
-                    
-                    <div class="quick-access-title">Historial</div>
-                    <div class="quick-access-desc">Ver sesiones del día</div>
-                </a>
-
-                <a href="{{ url_for('lista_facturas') }}" class="quick-access-card qa-info">
-                    
-                    <div class="quick-access-title">Facturas</div>
-                    <div class="quick-access-desc">Consultar facturas</div>
-                </a>
-
-                <a href="{{ url_for('menu_publico') }}" class="quick-access-card qa-primary" target="_blank">
-                    
-                    <div class="quick-access-title">Ver Menú</div>
-                    <div class="quick-access-desc">Consultar platillos</div>
-                </a>
-
-                <a href="{{ url_for('cocina') }}" class="quick-access-card qa-success">
-                    
-                    <div class="quick-access-title">Estado Cocina</div>
-                    <div class="quick-access-desc">Ver pedidos en preparación</div>
-                </a>
-            </div>
-        </div>
-
-        <div class="divider"></div>
-        {% endif %}
-
-        <!-- SECCIÓN: Accesos Rápidos para COCINA -->
-        {% if current_user.rol == 'cocina' %}
-        <div class="quick-access-section">
-            <h2 class="section-title"> Accesos Rápidos - Cocina</h2>
-            <div class="quick-access-grid">
-                <a href="{{ url_for('cocina') }}" class="quick-access-card qa-primary">
-                    
-                    <div class="quick-access-title">Panel de Cocina</div>
-                    <div class="quick-access-desc">Ver pedidos pendientes</div>
-                </a>
-
-                <a href="{{ url_for('menu_publico') }}" class="quick-access-card qa-success" target="_blank">
-                    
-                    <div class="quick-access-title">Ver Menú</div>
-                    <div class="quick-access-desc">Consultar platillos</div>
-                </a>
-            </div>
-        </div>
-
-        <div class="divider"></div>
-        {% endif %}
-
-        <!-- SECCIÓN: Mesas del Restaurante (para Admin y Meseros) -->
-        {% if current_user.rol != 'cocina' %}
-        
-        <!-- Leyenda de Estados -->
-        <div class="estados-leyenda">
-            <h3>Leyenda de Estados de Cocina</h3>
-            <div class="leyenda-grid">
-                <div class="leyenda-item">
-                    <div class="leyenda-color color-libre"></div>
-                    <span>🟢 Libre</span>
-                </div>
-                <div class="leyenda-item">
-                    <div class="leyenda-color color-pendiente"></div>
-                    <span>🟡 Pendiente</span>
-                </div>
-                <div class="leyenda-item">
-                    <div class="leyenda-color color-preparando"></div>
-                    <span>🔵 Preparando</span>
-                </div>
-                <div class="leyenda-item">
-                    <div class="leyenda-color color-listo"></div>
-                    <span>🟠 Listo para Servir</span>
-                </div>
-                <div class="leyenda-item">
-                    <div class="leyenda-color color-entregado"></div>
-                    <span>🟢 Entregado</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="mesas-section-title">🪑 Estado de las Mesas</div>
-        
-        <div class="mesas-grid">
-            {% for mesa in mesas %}
-            {% set info = info_mesas[mesa.id] %}
-            
-            {# Determinar el estado de cocina dominante #}
-            {% set estado_dominante = 'libre' %}
-            {% if info.sesion %}
-                {% set tiene_pendiente = info.pedidos|selectattr('estado', 'equalto', 'pendiente')|list|length > 0 %}
-                {% set tiene_preparando = info.pedidos|selectattr('estado', 'equalto', 'preparando')|list|length > 0 %}
-                {% set tiene_listo = info.pedidos|selectattr('estado', 'equalto', 'listo')|list|length > 0 %}
-                {% set todos_entregados = info.pedidos|selectattr('estado', 'equalto', 'entregado')|list|length == info.pedidos|length %}
-                
-                {% if tiene_listo %}
-                    {% set estado_dominante = 'listo' %}
-                {% elif tiene_preparando %}
-                    {% set estado_dominante = 'preparando' %}
-                {% elif tiene_pendiente %}
-                    {% set estado_dominante = 'pendiente' %}
-                {% elif todos_entregados %}
-                    {% set estado_dominante = 'entregado' %}
-                {% endif %}
-            {% endif %}
-
-            <div class="mesa-card mesa-{{ estado_dominante }}">
-                {# Badge de estado en la esquina #}
-                <span class="estado-cocina-badge estado-{{ estado_dominante }}">
-                    {% if estado_dominante == 'libre' %}Libre
-                    {% elif estado_dominante == 'pendiente' %}Pendiente
-                    {% elif estado_dominante == 'preparando' %}Preparando
-                    {% elif estado_dominante == 'listo' %}Listo
-                    {% elif estado_dominante == 'entregado' %}Entregado
-                    {% endif %}
-                </span>
-
-                <div class="mesa-header">
-                    <h3>Mesa {{ mesa.numero }}</h3>
-                </div>
-                
-                {% if info.sesion %}
-                <div class="sesion-tiempo">
-                    Desde {{ info.hora_inicio }}
-                </div>
-                
-                <div class="mesa-info-compact">
-                    <div class="info-row">
-                        <span class="info-label">Pedidos:</span>
-                        <span class="info-value">{{ info.total_pedidos }}</span>
+            <div class="status-item">
+                <div class="status-icon"><i data-lucide="hourglass"></i></div>
+                <div>
+                    <div class="status-label">Pendientes</div>
+                    <div class="status-value" id="pendientes-count">
+                        {{ pedidos|selectattr('estado', 'equalto', 'pendiente')|list|length }}
                     </div>
-                    <div class="info-row">
-                        <span class="info-label">Pendientes:</span>
-                        <span class="info-value">
-                            {% if info.tiene_pendientes %}
-                            {{ info.pedidos|selectattr('pagado', 'equalto', False)|list|length }} 
+                </div>
+            </div>
+
+            <div class="status-item">
+                <div class="status-icon"><i data-lucide="flame"></i></div>
+                <div>
+                    <div class="status-label">En Preparación</div>
+                    <div class="status-value" id="preparando-count">
+                        {{ pedidos|selectattr('estado', 'equalto', 'preparando')|list|length }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-item">
+                <span class="refresh-indicator" id="refresh-status">
+                    <i data-lucide="refresh-cw"></i>
+                    Actualizando en <span id="countdown">5</span>s
+                </span>
+            </div>
+
+        </div>
+
+        <!-- ── PEDIDOS GRID ── -->
+        <div id="pedidos-container">
+            {% if pedidos_por_mesa %}
+            <div class="pedidos-grid" id="pedidos-grid">
+        
+                {% for grupo in pedidos_por_mesa %}
+                <div class="pedido-card">
+        
+                    <!-- HEADER DE LA MESA -->
+                    <div class="pedido-header">
+                        <div class="pedido-mesa">Mesa {{ grupo.mesa.numero }}</div>
+                    </div>
+        
+                    <!-- 🔥 LOOP DE PEDIDOS (CLAVE) -->
+                    {% for pedido in grupo.pedidos %}
+        
+                    <div class="pedido-producto" data-id="{{ pedido.id }}">
+                        <span class="pedido-cantidad">{{ pedido.cantidad }}</span>
+                        {{ pedido.producto }}
+                    </div>
+        
+                    {% if pedido.notas %}
+                    <div class="pedido-notas">
+                        <div class="pedido-notas-header">
+                            <i data-lucide="alert-triangle"></i> Notas Especiales
+                        </div>
+                        <p>{{ pedido.notas }}</p>
+                    </div>
+                    {% endif %}
+        
+                    <div class="pedido-info">
+                        <div class="pedido-mesero">
+                            <i data-lucide="user"></i>
+                            <span>{{ pedido.mesero.nombre }}</span>
+                        </div>
+                        <span class="estado-badge estado-{{ pedido.estado }}">
+                            {% if pedido.estado == 'pendiente' %}
+                                <i data-lucide="hourglass"></i> Pendiente
                             {% else %}
-                            0 ✓
+                                <i data-lucide="flame"></i> Preparando
                             {% endif %}
                         </span>
                     </div>
-                </div>
-                {% endif %}
-                
-                <div class="mesa-actions">
-                    <a href="{{ url_for('nuevo_pedido', mesa_id=mesa.id) }}" class="btn btn-primary btn-sm">+ Pedido</a>
-                    <a href="{{ url_for('ver_mesa', mesa_id=mesa.id) }}" class="btn btn-secondary btn-sm">Ver</a>
-                    {% if info.sesion %}
-                        {% if info.tiene_pendientes %}
-                        <a href="{{ url_for('pagar_mesa', mesa_id=mesa.id) }}" 
-                           class="btn btn-success btn-sm btn-block" 
-                           onclick="return confirm('¿Marcar todo como pagado?')">Pagar Todo</a>
-                        {% elif info.todos_entregados %}
-                        <a href="{{ url_for('facturar_sesion', sesion_id=info.sesion.id) }}" 
-                           class="btn btn-info btn-sm btn-block" 
-                           style="background: #06b6d4;">Facturar</a>
+        
+                    <div class="pedido-actions">
+                        {% if pedido.estado == 'pendiente' %}
+                        <a href="{{ url_for('actualizar_estado', pedido_id=pedido.id, estado='preparando') }}"
+                           class="btn-cocina btn-warning">
+                            <i data-lucide="flame"></i> Comenzar a Preparar
+                        </a>
+                        {% elif pedido.estado == 'preparando' %}
+                        <a href="{{ url_for('actualizar_estado', pedido_id=pedido.id, estado='listo') }}"
+                           class="btn-cocina btn-success">
+                            <i data-lucide="check-circle"></i> Marcar como Listo
+                        </a>
                         {% endif %}
-                    {% endif %}
+                    </div>
+        
+                    <hr style="margin: 10px 0; border-color: #252525;">
+        
+                    {% endfor %}
+        
                 </div>
+                {% endfor %}
+        
             </div>
-            {% endfor %}
-        </div>
-
-        {% if not mesas %}
-        <div class="empty-state">
-            <h2>No hay mesas disponibles</h2>
-            <p>Configura las mesas desde el panel de administración</p>
-            {% if current_user.rol == 'admin' %}
-            <a href="{{ url_for('administrar_mesas') }}" class="btn btn-primary" style="margin-top: 1rem; display: inline-block;">
-                Configurar Mesas
-            </a>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon"><i data-lucide="sparkles"></i></div>
+                <h2>No hay pedidos pendientes</h2>
+                <p class="text-muted">Todos los pedidos están listos o entregados</p>
+            </div>
             {% endif %}
         </div>
-        {% endif %}
-        {% endif %}
+    </div><!-- /container -->
+
+    <!-- ── TOAST ── -->
+    <div class="notification-toast" id="notification">
+        <span class="notification-icon"><i data-lucide="bell"></i></span>
+        <div class="notification-text">¡Nuevo pedido en cocina!</div>
     </div>
 
-    // ================================================================
-// REEMPLAZAR TODO EL SCRIPT AL FINAL DE cocina.html CON ESTE
-// ================================================================
+    <audio id="alert-sound" preload="auto"></audio>
 
-<script>
-    // ── Lucide init ──
-    lucide.createIcons();
+    <script>
+        // ── Lucide init ──
+        lucide.createIcons();
 
-    // ── CONFIGURACIÓN ──
-    const REFRESH_INTERVAL = 5000;
-    const CHECK_INTERVAL   = 3000;
-    const NOTIFICATION_COOLDOWN = 10000; // 10 segundos entre notificaciones
-    
-    // ── ESTADO GLOBAL ──
-    let currentPedidosIds = new Set();
-    let notifiedPedidosIds = new Set(); // ← NUEVO: IDs ya notificados
-    let countdown = 5;
-    let hasUserInteracted = false;
-    let lastNotificationTime = 0;
-    let isChecking = false;
-
-    // ── INICIALIZAR IDs AL CARGAR ──
-    function initializePedidosIds() {
-        currentPedidosIds.clear();
-        notifiedPedidosIds.clear();
-        
-        // Obtener TODOS los IDs de pedidos actuales
+        // ── CONFIGURACIÓN ──
+        const REFRESH_INTERVAL = 5000;
+        const CHECK_INTERVAL   = 3000;
+        let currentPedidosIds  = new Set();
         document.querySelectorAll('[data-id]').forEach(el => {
-            const id = el.dataset.id.toString();
-            currentPedidosIds.add(id);
-            notifiedPedidosIds.add(id); // Marcar como ya notificados
+            currentPedidosIds.add(el.dataset.id);
         });
-        
-        console.log('🔄 IDs inicializados:', {
-            total: currentPedidosIds.size,
-            ids: Array.from(currentPedidosIds)
-        });
-    }
+        let countdown          = 5;
+        let hasUserInteracted  = false;
+        let lastNotificationTime = 0;
+        const NOTIFICATION_COOLDOWN = 5000;
 
-    // Inicializar al cargar la página
-    initializePedidosIds();
-
-    // ── NOTIFICACIÓN DEL NAVEGADOR ──
-    function requestNotificationPermission() {
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-    }
-
-    function showBrowserNotification(message, pedido) {
-        if ('Notification' in window && Notification.permission === 'granted') {
-            const notification = new Notification('Nuevo Pedido en Cocina', {
-                body: message,
-                icon: '/static/favicon.ico',
-                badge: '/static/favicon.ico',
-                tag: 'cocina-pedido-' + pedido.id, // Tag único por pedido
-                requireInteraction: true,
-                vibrate: [200, 100, 200, 100, 200]
-            });
-            notification.onclick = function() { 
-                window.focus(); 
-                notification.close(); 
-            };
-            setTimeout(() => notification.close(), 10000);
-        }
-    }
-
-    // ── SONIDO ──
-    function createAlertSound() {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-        return function playAlert() {
-            if (!hasUserInteracted) {
-                console.log('⚠️ Sonido bloqueado: usuario no ha interactuado');
-                return;
+        // ── NOTIFICACIÓN DEL NAVEGADOR ──
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
             }
+        }
 
-            const now = Date.now();
-            if (now - lastNotificationTime < NOTIFICATION_COOLDOWN) {
-                console.log('⏳ Cooldown activo, sonido omitido');
-                return;
+        function showBrowserNotification(message, pedido) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const notification = new Notification('Nuevo Pedido en Cocina', {
+                    body: message,
+                    icon: '/static/favicon.ico',
+                    badge: '/static/favicon.ico',
+                    tag: 'cocina-pedido',
+                    requireInteraction: true,
+                    vibrate: [200, 100, 200, 100, 200]
+                });
+                notification.onclick = function() { window.focus(); notification.close(); };
+                setTimeout(() => notification.close(), 10000);
             }
-            
-            lastNotificationTime = now;
-            console.log('🔊 Reproduciendo sonido de alerta');
+        }
 
-            const duration = 0.3;
-            const volume   = 0.7;
+        // ── SONIDO ──
+        function createAlertSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-            // Solo 2 repeticiones en lugar de 3
-            for (let repeat = 0; repeat < 2; repeat++) {
-                setTimeout(() => {
-                    const osc1  = audioContext.createOscillator();
-                    const gain1 = audioContext.createGain();
-                    osc1.connect(gain1);
-                    gain1.connect(audioContext.destination);
-                    osc1.type = 'square';
-                    osc1.frequency.setValueAtTime(800, audioContext.currentTime);
-                    osc1.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + duration);
-                    gain1.gain.setValueAtTime(volume, audioContext.currentTime);
-                    gain1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-                    osc1.start(audioContext.currentTime);
-                    osc1.stop(audioContext.currentTime + duration);
+            return function playAlert() {
+                if (!hasUserInteracted) return;
 
+                const now = Date.now();
+                if (now - lastNotificationTime < NOTIFICATION_COOLDOWN) return;
+                lastNotificationTime = now;
+
+                const duration = 0.3;
+                const volume   = 0.7;
+
+                for (let repeat = 0; repeat < 3; repeat++) {
                     setTimeout(() => {
-                        const osc2  = audioContext.createOscillator();
-                        const gain2 = audioContext.createGain();
-                        osc2.connect(gain2);
-                        gain2.connect(audioContext.destination);
-                        osc2.type = 'square';
-                        osc2.frequency.setValueAtTime(1200, audioContext.currentTime);
-                        osc2.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + duration);
-                        gain2.gain.setValueAtTime(volume, audioContext.currentTime);
-                        gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-                        osc2.start(audioContext.currentTime);
-                        osc2.stop(audioContext.currentTime + duration);
-                    }, duration * 1000);
+                        const osc1  = audioContext.createOscillator();
+                        const gain1 = audioContext.createGain();
+                        osc1.connect(gain1);
+                        gain1.connect(audioContext.destination);
+                        osc1.type = 'square';
+                        osc1.frequency.setValueAtTime(800, audioContext.currentTime);
+                        osc1.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + duration);
+                        gain1.gain.setValueAtTime(volume, audioContext.currentTime);
+                        gain1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                        osc1.start(audioContext.currentTime);
+                        osc1.stop(audioContext.currentTime + duration);
 
-                }, repeat * 700);
-            }
+                        setTimeout(() => {
+                            const osc2  = audioContext.createOscillator();
+                            const gain2 = audioContext.createGain();
+                            osc2.connect(gain2);
+                            gain2.connect(audioContext.destination);
+                            osc2.type = 'square';
+                            osc2.frequency.setValueAtTime(1200, audioContext.currentTime);
+                            osc2.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + duration);
+                            gain2.gain.setValueAtTime(volume, audioContext.currentTime);
+                            gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                            osc2.start(audioContext.currentTime);
+                            osc2.stop(audioContext.currentTime + duration);
+                        }, duration * 1000);
 
-            if ('vibrate' in navigator) {
-                navigator.vibrate([300, 100, 300]);
-            }
-        };
-    }
+                    }, repeat * 700);
+                }
 
-    const playAlertSound = createAlertSound();
-
-    // ── INTERACCIÓN ──
-    document.addEventListener('click', () => {
-        if (!hasUserInteracted) {
-            hasUserInteracted = true;
-            console.log('✅ Sonido activado por interacción del usuario');
-            showToast('Sonido de alertas activado', 'success');
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([300, 100, 300, 100, 300, 100, 300]);
+                }
+            };
         }
-    }, { once: true });
 
-    document.addEventListener('keydown', () => {
-        if (!hasUserInteracted) {
-            hasUserInteracted = true;
-            console.log('✅ Sonido activado por teclado');
-        }
-    }, { once: true });
+        const playAlertSound = createAlertSound();
 
-    setTimeout(requestNotificationPermission, 2000);
-
-    // ── TOAST ──
-    function showToast(message, type = 'info') {
-        const notification = document.getElementById('notification');
-        const notificationText = notification.querySelector('.notification-text');
-
-        const colors = {
-            success: { border: '#22c55e', glow: 'rgba(34,197,94,.3)' },
-            warning: { border: '#f59e0b', glow: 'rgba(245,158,11,.3)' },
-            error:   { border: '#ef4444', glow: 'rgba(239,68,68,.3)'  },
-            info:    { border: '#3b82f6', glow: 'rgba(59,130,246,.3)' }
-        };
-
-        const c = colors[type] || colors.info;
-        notification.style.borderColor = c.border;
-        notification.style.boxShadow   = `0 8px 40px rgba(0,0,0,.6), 0 0 20px ${c.glow}`;
-        notification.querySelector('.notification-icon svg').style.stroke = c.border;
-
-        notificationText.textContent = message;
-        notification.classList.add('show');
-        setTimeout(() => notification.classList.remove('show'), 5000);
-    }
-
-    // ── TIEMPOS TRANSCURRIDOS ──
-    function updateElapsedTimes() {
-        const now = Date.now() / 1000;
-        document.querySelectorAll('.tiempo-transcurrido').forEach(el => {
-            const timestamp = parseFloat(el.dataset.timestamp);
-            const minutes   = Math.floor((now - timestamp) / 60);
-            el.textContent  = `Hace ${minutes} min`;
-
-            if (minutes > 20) {
-                el.style.color      = '#dc2626';
-                el.style.fontWeight = '700';
-                el.closest('.pedido-card').style.borderColor = '#dc2626';
-            } else if (minutes > 15) {
-                el.style.color      = '#ef4444';
-                el.style.fontWeight = '700';
-            } else if (minutes > 10) {
-                el.style.color = '#f59e0b';
+        // ── INTERACCIÓN ──
+        document.addEventListener('click', () => {
+            if (!hasUserInteracted) {
+                hasUserInteracted = true;
+                showToast('Sonido de alertas activado', 'success');
             }
+        }, { once: true });
+
+        document.addEventListener('keydown', () => {
+            if (!hasUserInteracted) hasUserInteracted = true;
+        }, { once: true });
+
+        setTimeout(requestNotificationPermission, 2000);
+
+        // ── INIT IDS ──
+
+
+        // ── TOAST ──
+        function showToast(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const notificationText = notification.querySelector('.notification-text');
+
+            const colors = {
+                success: { border: '#22c55e', glow: 'rgba(34,197,94,.3)' },
+                warning: { border: '#f59e0b', glow: 'rgba(245,158,11,.3)' },
+                error:   { border: '#ef4444', glow: 'rgba(239,68,68,.3)'  },
+                info:    { border: '#3b82f6', glow: 'rgba(59,130,246,.3)' }
+            };
+
+            const c = colors[type] || colors.info;
+            notification.style.borderColor = c.border;
+            notification.style.boxShadow   = `0 8px 40px rgba(0,0,0,.6), 0 0 20px ${c.glow}`;
+            notification.querySelector('.notification-icon svg').style.stroke = c.border;
+
+            notificationText.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 5000);
+        }
+
+        // ── TIEMPOS TRANSCURRIDOS ──
+        function updateElapsedTimes() {
+            const now = Date.now() / 1000;
+            document.querySelectorAll('.tiempo-transcurrido').forEach(el => {
+                const timestamp = parseFloat(el.dataset.timestamp);
+                const minutes   = Math.floor((now - timestamp) / 60);
+                el.textContent  = `Hace ${minutes} min`;
+
+                if (minutes > 20) {
+                    el.style.color      = '#dc2626';
+                    el.style.fontWeight = '700';
+                    el.closest('.pedido-card').style.borderColor = '#dc2626';
+                } else if (minutes > 15) {
+                    el.style.color      = '#ef4444';
+                    el.style.fontWeight = '700';
+                } else if (minutes > 10) {
+                    el.style.color = '#f59e0b';
+                }
+            });
+        }
+
+        // ── VERIFICAR NUEVOS PEDIDOS ──
+        let isChecking = false;
+
+        async function checkNewPedidos() {
+            if (isChecking) return;
+            isChecking = true;
+
+            try {
+                const response = await fetch('/api/cocina/verificar_nuevos');
+                const data     = await response.json();
+
+                let hasNewPedidos  = false;
+                let newPedidosList = [];
+
+                data.pedidos.forEach(pedido => {
+                    if (!currentPedidosIds.has(pedido.id.toString())) {
+                        hasNewPedidos = true;
+                        currentPedidosIds.add(pedido.id.toString());
+                        newPedidosList.push(pedido);
+                    }
+                });
+
+                if (hasNewPedidos) {
+                    playAlertSound();
+                    const mensaje = newPedidosList.length === 1
+                        ? `Mesa ${newPedidosList[0].mesa}: ${newPedidosList[0].cantidad}x ${newPedidosList[0].producto}`
+                        : `${newPedidosList.length} nuevos pedidos en cocina`;
+
+                    showToast(mensaje, 'warning');
+                    showBrowserNotification(mensaje, newPedidosList[0]);
+                    setTimeout(() => updatePage(), 500);
+                }
+
+                if (!hasNewPedidos) {
+                    document.getElementById('total-pedidos').textContent    = data.total;
+                    document.getElementById('pendientes-count').textContent = data.pendientes;
+                    document.getElementById('preparando-count').textContent = data.preparando;
+                }
+
+            } catch (error) {
+                console.error('Error al verificar pedidos:', error);
+            } finally {
+                isChecking = false;
+            }
+        }
+
+        // ── ACTUALIZAR PÁGINA COMPLETA ──
+        async function updatePage() {
+            try {
+                const refreshStatus = document.getElementById('refresh-status');
+                refreshStatus.classList.add('updating');
+
+                const response = await fetch(window.location.href);
+                const html     = await response.text();
+                const parser   = new DOMParser();
+                const doc      = parser.parseFromString(html, 'text/html');
+
+                const newPedidosContainer = doc.querySelector('#pedidos-container');
+                const newPedidosCards = doc.querySelectorAll('[data-id]');
+
+                const newIds = new Set();
+                newPedidosCards.forEach(card => {
+                    const pedidoId = card.dataset.id;
+                    newIds.add(pedidoId);
+                    if (!currentPedidosIds.has(pedidoId)) card.classList.add('nuevo');
+                });
+
+                currentPedidosIds = newIds;
+
+                if (newPedidosContainer) {
+                    document.getElementById('pedidos-container').innerHTML = newPedidosContainer.innerHTML;
+                    lucide.createIcons(); // re-render icons after DOM update
+                }
+
+                document.getElementById('total-pedidos').textContent    = doc.getElementById('total-pedidos').textContent;
+                document.getElementById('pendientes-count').textContent = doc.getElementById('pendientes-count').textContent;
+                document.getElementById('preparando-count').textContent = doc.getElementById('preparando-count').textContent;
+
+                refreshStatus.classList.remove('updating');
+
+            } catch (error) {
+                console.error('Error al actualizar:', error);
+                showToast('Error al actualizar la página', 'error');
+            }
+        }
+
+        // ── CONTADOR REGRESIVO ──
+        function updateCountdown() {
+            countdown--;
+            document.getElementById('countdown').textContent = countdown;
+            if (countdown <= 0) {
+                countdown = 5;
+                updatePage();
+            }
+        }
+
+        // ── TIMERS ──
+        setInterval(checkNewPedidos,   CHECK_INTERVAL);
+        setInterval(updateCountdown,   1000);
+        setInterval(updateElapsedTimes, 30000);
+
+        updateElapsedTimes();
+        setTimeout(checkNewPedidos, 2000);
+
+        // ── VISIBILIDAD ──
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) { checkNewPedidos(); updatePage(); }
         });
-    }
 
-    // ── VERIFICAR NUEVOS PEDIDOS ──
-    async function checkNewPedidos() {
-        if (isChecking) {
-            console.log('⏭️ Ya hay una verificación en curso');
-            return;
-        }
-        
-        isChecking = true;
-
-        try {
-            const response = await fetch('/api/cocina/verificar_nuevos');
-            const data     = await response.json();
-
-            let hasNewPedidos  = false;
-            let newPedidosList = [];
-
-            // Construir Set de IDs del servidor
-            const serverPedidosIds = new Set(
-                data.pedidos.map(p => p.id.toString())
-            );
-
-            console.log('📊 Verificación:', {
-                enServidor: serverPedidosIds.size,
-                enCliente: currentPedidosIds.size,
-                yaNotificados: notifiedPedidosIds.size
-            });
-
-            // Detectar pedidos REALMENTE nuevos
-            data.pedidos.forEach(pedido => {
-                const pedidoId = pedido.id.toString();
-                
-                // Solo es nuevo si:
-                // 1. No está en currentPedidosIds (no lo teníamos antes)
-                // 2. No está en notifiedPedidosIds (no lo hemos notificado)
-                if (!currentPedidosIds.has(pedidoId) && !notifiedPedidosIds.has(pedidoId)) {
-                    hasNewPedidos = true;
-                    newPedidosList.push(pedido);
-                    notifiedPedidosIds.add(pedidoId); // Marcar como notificado
-                    console.log('🆕 Nuevo pedido detectado:', pedidoId, pedido.producto);
-                }
-            });
-
-            // Actualizar la lista actual de pedidos
-            currentPedidosIds = serverPedidosIds;
-
-            // Solo notificar si hay pedidos REALMENTE nuevos
-            if (hasNewPedidos && newPedidosList.length > 0) {
-                console.log('🔔 Notificando', newPedidosList.length, 'pedido(s) nuevo(s)');
-                
-                playAlertSound();
-                
-                const mensaje = newPedidosList.length === 1
-                    ? `Mesa ${newPedidosList[0].mesa}: ${newPedidosList[0].cantidad}x ${newPedidosList[0].producto}`
-                    : `${newPedidosList.length} nuevos pedidos en cocina`;
-
-                showToast(mensaje, 'warning');
-                showBrowserNotification(mensaje, newPedidosList[0]);
-                
-                // Actualizar la página después de un breve delay
-                setTimeout(() => updatePage(), 500);
+        // ── MENSAJE INICIAL ──
+        setTimeout(() => {
+            if (!hasUserInteracted) {
+                showToast('Haz click para activar el sonido de alertas', 'info');
             }
-
-            // Actualizar contadores sin recargar la página
-            if (!hasNewPedidos) {
-                document.getElementById('total-pedidos').textContent    = data.total;
-                document.getElementById('pendientes-count').textContent = data.pendientes;
-                document.getElementById('preparando-count').textContent = data.preparando;
-            }
-
-        } catch (error) {
-            console.error('❌ Error al verificar pedidos:', error);
-        } finally {
-            isChecking = false;
-        }
-    }
-
-    // ── ACTUALIZAR PÁGINA COMPLETA ──
-    async function updatePage() {
-        try {
-            console.log('🔄 Actualizando página completa...');
-            
-            const refreshStatus = document.getElementById('refresh-status');
-            refreshStatus.classList.add('updating');
-
-            const response = await fetch(window.location.href);
-            const html     = await response.text();
-            const parser   = new DOMParser();
-            const doc      = parser.parseFromString(html, 'text/html');
-
-            const newPedidosContainer = doc.querySelector('#pedidos-container');
-            const newPedidosCards = doc.querySelectorAll('[data-id]');
-
-            // Construir nuevo Set de IDs
-            const newIds = new Set();
-            newPedidosCards.forEach(card => {
-                const pedidoId = card.dataset.id.toString();
-                newIds.add(pedidoId);
-                
-                // Solo marcar como "nuevo" si NO estaba en el Set anterior
-                if (!currentPedidosIds.has(pedidoId)) {
-                    card.classList.add('nuevo');
-                }
-            });
-
-            // Actualizar el Set de IDs actuales
-            currentPedidosIds = newIds;
-
-            // Actualizar el DOM
-            if (newPedidosContainer) {
-                document.getElementById('pedidos-container').innerHTML = newPedidosContainer.innerHTML;
-                lucide.createIcons(); // re-render icons
-            }
-
-            // Actualizar contadores
-            document.getElementById('total-pedidos').textContent    = doc.getElementById('total-pedidos').textContent;
-            document.getElementById('pendientes-count').textContent = doc.getElementById('pendientes-count').textContent;
-            document.getElementById('preparando-count').textContent = doc.getElementById('preparando-count').textContent;
-
-            refreshStatus.classList.remove('updating');
-            
-            console.log('✅ Página actualizada. IDs actuales:', currentPedidosIds.size);
-
-        } catch (error) {
-            console.error('❌ Error al actualizar:', error);
-            showToast('Error al actualizar la página', 'error');
-        }
-    }
-
-    // ── CONTADOR REGRESIVO ──
-    function updateCountdown() {
-        countdown--;
-        document.getElementById('countdown').textContent = countdown;
-        if (countdown <= 0) {
-            countdown = 5;
-            updatePage();
-        }
-    }
-
-    // ── LIMPIEZA DE PEDIDOS ANTIGUOS ──
-    // Limpiar IDs notificados cada 5 minutos para evitar que crezca infinitamente
-    setInterval(() => {
-        // Mantener solo los IDs que aún existen en currentPedidosIds
-        const cleanedNotified = new Set(
-            Array.from(notifiedPedidosIds).filter(id => currentPedidosIds.has(id))
-        );
-        
-        const removed = notifiedPedidosIds.size - cleanedNotified.size;
-        if (removed > 0) {
-            console.log('🧹 Limpiados', removed, 'IDs antiguos de notificaciones');
-        }
-        
-        notifiedPedidosIds = cleanedNotified;
-    }, 5 * 60 * 1000); // cada 5 minutos
-
-    // ── TIMERS ──
-    setInterval(checkNewPedidos,   CHECK_INTERVAL);
-    setInterval(updateCountdown,   1000);
-    setInterval(updateElapsedTimes, 30000);
-
-    updateElapsedTimes();
-    
-    // Primera verificación después de 2 segundos
-    setTimeout(checkNewPedidos, 2000);
-
-    // ── VISIBILIDAD ──
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) { 
-            console.log('👁️ Pestaña visible de nuevo, verificando...');
-            checkNewPedidos(); 
-            updatePage(); 
-        }
-    });
-
-    // ── MENSAJE INICIAL ──
-    setTimeout(() => {
-        if (!hasUserInteracted) {
-            showToast('Haz click para activar el sonido de alertas', 'info');
-        }
-    }, 3000);
-
-    // ── DEBUG: Ver estado actual ──
-    // Descomenta para debugging
-    // setInterval(() => {
-    //     console.log('📊 Estado:', {
-    //         actuales: currentPedidosIds.size,
-    //         notificados: notifiedPedidosIds.size,
-    //         cooldownActivo: (Date.now() - lastNotificationTime) < NOTIFICATION_COOLDOWN
-    //     });
-    // }, 10000);
-</script>
+        }, 3000);
+    </script>
 </body>
 </html>
