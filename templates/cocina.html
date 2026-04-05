@@ -301,7 +301,8 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 1rem;
-            padding: 1.4rem;
+            padding: 0.8rem;
+            font-size: 0.85rem;
             box-shadow: var(--card-shadow);
             transition: transform .25s, box-shadow .25s, border-color .25s;
             position: relative;
@@ -354,8 +355,8 @@
         }
 
         .pedido-mesa {
+            font-size: 1.1rem;
             font-family: 'Space Mono', monospace;
-            font-size: 1.6rem;
             font-weight: 700;
             color: var(--green);
             line-height: 1;
@@ -387,10 +388,10 @@
 
         /* ─── PRODUCTO ───────────────────────────────────── */
         .pedido-producto {
-            font-size: 1.25rem;
+            font-size: 0.95rem;
+            margin-bottom: 0.3rem;
             font-weight: 700;
             color: var(--text);
-            margin-bottom: 1rem;
             display: flex;
             align-items: center;
             gap: .5rem;
@@ -414,11 +415,16 @@
 
         /* ─── NOTAS ──────────────────────────────────────── */
         .pedido-notas {
+            padding: 0.4rem;
+            font-size: 0.75rem;
             background: rgba(245,158,11,.08);
             border: 1px solid rgba(245,158,11,.3);
-            padding: .85rem 1rem;
             border-radius: .6rem;
             margin: .85rem 0;
+        }
+        .pedido-card {
+            max-height: 300px;
+            overflow-y: auto;
         }
 
         .pedido-notas-header {
@@ -499,8 +505,8 @@
         }
 
         .btn-cocina {
-            padding: .9rem 1rem;
-            font-size: .92rem;
+            padding: .4rem .6rem;
+            font-size: 0.75rem;
             font-weight: 700;
             border-radius: .65rem;
             display: flex;
@@ -728,7 +734,7 @@
                     <!-- 🔥 LOOP DE PEDIDOS (CLAVE) -->
                     {% for pedido in grupo.pedidos %}
         
-                    <div class="pedido-producto">
+                    <div class="pedido-producto" data-id="{{ pedido.id }}">
                         <span class="pedido-cantidad">{{ pedido.cantidad }}</span>
                         {{ pedido.producto }}
                     </div>
@@ -804,10 +810,13 @@
         const REFRESH_INTERVAL = 5000;
         const CHECK_INTERVAL   = 3000;
         let currentPedidosIds  = new Set();
+        document.querySelectorAll('[data-id]').forEach(el => {
+            currentPedidosIds.add(el.dataset.id);
+        });
         let countdown          = 5;
         let hasUserInteracted  = false;
         let lastNotificationTime = 0;
-        const NOTIFICATION_COOLDOWN = 2000;
+        const NOTIFICATION_COOLDOWN = 5000;
 
         // ── NOTIFICACIÓN DEL NAVEGADOR ──
         function requestNotificationPermission() {
@@ -899,9 +908,7 @@
         setTimeout(requestNotificationPermission, 2000);
 
         // ── INIT IDS ──
-        document.querySelectorAll('.pedido-card').forEach(card => {
-            currentPedidosIds.add(card.dataset.pedidoId);
-        });
+
 
         // ── TOAST ──
         function showToast(message, type = 'info') {
@@ -1004,11 +1011,11 @@
                 const doc      = parser.parseFromString(html, 'text/html');
 
                 const newPedidosContainer = doc.querySelector('#pedidos-container');
-                const newPedidosCards     = doc.querySelectorAll('.pedido-card');
+                const newPedidosCards = doc.querySelectorAll('[data-id]');
 
                 const newIds = new Set();
                 newPedidosCards.forEach(card => {
-                    const pedidoId = card.dataset.pedidoId;
+                    const pedidoId = card.dataset.id;
                     newIds.add(pedidoId);
                     if (!currentPedidosIds.has(pedidoId)) card.classList.add('nuevo');
                 });
