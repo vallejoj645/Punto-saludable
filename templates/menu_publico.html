@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nuestro Menú - Restaurante</title>
-
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-
     <style>
         :root {
             --bg:         #080808;
@@ -60,6 +58,18 @@
         .header h1 span { color:var(--green); }
         .header p { color:var(--muted); font-size:1rem; }
 
+        /* ─── CHIP MESA ACTIVA ─── */
+        .mesa-chip {
+            display: inline-flex; align-items: center; gap: .5rem;
+            background: var(--green-glow); border: 1px solid rgba(34,197,94,.35);
+            padding: .4rem 1rem; border-radius: 2rem;
+            font-family: 'Space Mono', monospace; font-size: .85rem; font-weight: 700;
+            color: var(--green); cursor: pointer; margin-top: .75rem;
+            transition: all .2s;
+        }
+        .mesa-chip:hover { background: rgba(34,197,94,.25); }
+        .mesa-chip svg { width: 13px; height: 13px; stroke: var(--green); }
+
         /* ─── LOGIN LINK ─── */
         .login-link {
             position:fixed; top:1.1rem; right:1.25rem;
@@ -68,7 +78,7 @@
             padding:.55rem 1.1rem; border-radius:2rem;
             text-decoration:none; color:var(--muted);
             font-size:.85rem; font-weight:600;
-            box-shadow:0 4px 20px rgba(0,0,0,.5); transition:all .2s; z-index:1000;
+            box-shadow:0 4px 20px rgba(0,0,0,.5); transition:all .2s; z-index:200;
         }
         .login-link svg { width:14px; height:14px; stroke:var(--muted); transition:stroke .2s; }
         .login-link:hover { border-color:var(--green); color:var(--green); }
@@ -103,48 +113,11 @@
         .item-card.no-disponible { opacity:.4; pointer-events:none; }
         .item-card.en-carrito { border-color:var(--green); box-shadow:0 0 0 1px var(--green), 0 8px 24px var(--green-glow); }
 
-        /* ─── IMAGEN con skeleton loader ─── */
         .item-imagen-wrap { width:100%; height:165px; position:relative; overflow:hidden; background:#151515; flex-shrink:0; }
-
-        /* Skeleton animado mientras carga */
-        .item-imagen-wrap::before {
-            content: '';
-            position: absolute; inset: 0;
-            background: linear-gradient(90deg, #151515 25%, #1e1e1e 50%, #151515 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            z-index: 1;
-            transition: opacity .3s;
-        }
-        .item-imagen-wrap.loaded::before { opacity: 0; pointer-events: none; }
-
-        @keyframes shimmer {
-            0%   { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        .item-imagen-wrap img {
-            width:100%; height:100%; object-fit:cover; display:block;
-            position: relative; z-index: 2;
-            opacity: 0; transition: opacity .4s ease;
-        }
-        .item-imagen-wrap.loaded img { opacity: 1; }
-
-        /* Placeholder cuando no hay imagen o falló la carga */
-        .item-imagen-placeholder {
-            width:100%; height:100%;
-            display:flex; align-items:center; justify-content:center;
-            background:linear-gradient(135deg,#141414,#1c1c1c);
-            position: absolute; inset: 0; z-index: 2;
-        }
+        .item-imagen-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
+        .item-imagen-placeholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#141414,#1c1c1c); }
         .item-imagen-placeholder svg { stroke:#2a2a2a; width:44px; height:44px; }
-        /* Solo mostrar placeholder si está activo */
-        .item-imagen-placeholder { display: none; }
-        .item-imagen-wrap.show-placeholder .item-imagen-placeholder { display: flex; }
-        .item-imagen-wrap.show-placeholder img { display: none; }
-        .item-imagen-wrap.show-placeholder::before { display: none; }
-
-        .no-disponible-badge { position:absolute; top:.75rem; right:.75rem; background:var(--red); color:white; padding:.25rem .7rem; border-radius:.4rem; font-size:.72rem; font-weight:700; text-transform:uppercase; z-index: 3; }
+        .no-disponible-badge { position:absolute; top:.75rem; right:.75rem; background:var(--red); color:white; padding:.25rem .7rem; border-radius:.4rem; font-size:.72rem; font-weight:700; text-transform:uppercase; }
 
         .item-body { padding:1.1rem; display:flex; flex-direction:column; flex:1; }
         .item-nombre { font-size:1.02rem; font-weight:700; margin-bottom:.35rem; line-height:1.3; }
@@ -212,13 +185,14 @@
         .cart-item-qty { display:flex; align-items:center; gap:.4rem; }
         .cart-item-subtotal { font-family:'Space Mono',monospace; font-size:.9rem; font-weight:700; color:var(--green); min-width:70px; text-align:right; }
 
+        /* Mesa en carrito: solo muestra la seleccionada, no input manual */
         .mesa-section { background:var(--surface2); border:1px solid var(--border); border-radius:.75rem; padding:1.1rem; margin-bottom:1.25rem; }
         .field-label { display:flex; align-items:center; gap:.4rem; font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:.6rem; }
         .field-label svg { width:13px; height:13px; stroke:var(--muted); }
-
-        .mesa-input { width:100%; background:var(--surface3); border:1px solid var(--border); border-radius:.5rem; padding:.7rem 1rem; color:var(--text); font-family:'Space Mono',monospace; font-size:1.1rem; font-weight:700; outline:none; transition:border-color .2s; }
-        .mesa-input:focus { border-color:var(--green); }
-        .mesa-input::placeholder { color:var(--muted); font-size:.85rem; font-family:'DM Sans',sans-serif; font-weight:400; }
+        .mesa-confirmada { display:flex; align-items:center; justify-content:space-between; }
+        .mesa-confirmada-nombre { font-family:'Space Mono',monospace; font-size:1.2rem; font-weight:700; color:var(--green); }
+        .btn-cambiar-mesa { font-size:.78rem; color:var(--muted); background:none; border:1px solid var(--border); padding:.3rem .7rem; border-radius:.4rem; cursor:pointer; transition:all .15s; }
+        .btn-cambiar-mesa:hover { border-color:var(--green); color:var(--green); }
 
         .notas-section { margin-bottom:1.25rem; }
         .notas-input { width:100%; background:var(--surface3); border:1px solid var(--border); border-radius:.5rem; padding:.7rem 1rem; color:var(--text); font-family:'DM Sans',sans-serif; font-size:.9rem; outline:none; resize:none; transition:border-color .2s; min-height:70px; }
@@ -270,6 +244,177 @@
         .empty-state h2 { font-family:'Space Mono',monospace; font-size:1.5rem; color:var(--text); margin-bottom:.5rem; }
         .empty-state p { color:var(--muted); }
 
+        /* ══════════════════════════════════════════
+           MODAL SELECCIÓN DE MESA
+        ══════════════════════════════════════════ */
+        .mesa-modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.92);
+            backdrop-filter: blur(8px);
+            z-index: 3000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1.5rem;
+            transition: opacity .35s;
+        }
+        .mesa-modal-overlay.hidden { opacity: 0; pointer-events: none; }
+
+        .mesa-modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            padding: 2rem;
+            max-width: 480px; width: 100%;
+            box-shadow: 0 24px 80px rgba(0,0,0,.8);
+            animation: modalIn .4s cubic-bezier(.22,1,.36,1);
+        }
+        @keyframes modalIn { from { opacity:0; transform:scale(.92) translateY(20px); } to { opacity:1; transform:scale(1) translateY(0); } }
+
+        .mesa-modal-icon {
+            width: 56px; height: 56px;
+            background: var(--green-glow); border: 1px solid rgba(34,197,94,.4);
+            border-radius: .85rem; margin: 0 auto 1.25rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .mesa-modal-icon svg { stroke: var(--green); width: 26px; height: 26px; }
+
+        .mesa-modal h2 {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.5rem; font-weight: 700;
+            text-align: center; margin-bottom: .4rem;
+        }
+        .mesa-modal h2 span { color: var(--green); }
+        .mesa-modal p { color: var(--muted); text-align: center; font-size: .9rem; margin-bottom: 1.75rem; }
+
+        /* Grid de botones de mesas */
+        .mesas-btn-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: .6rem;
+            max-height: 320px;
+            overflow-y: auto;
+            margin-bottom: 1.25rem;
+            padding-right: .25rem;
+        }
+        .mesas-btn-grid::-webkit-scrollbar { width: 4px; }
+        .mesas-btn-grid::-webkit-scrollbar-track { background: var(--surface2); border-radius: 2px; }
+        .mesas-btn-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .mesa-btn {
+            padding: .75rem .5rem;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: .65rem; color: var(--text);
+            font-family: 'Space Mono', monospace; font-size: .85rem; font-weight: 700;
+            cursor: pointer; text-align: center;
+            transition: all .18s; line-height: 1.3;
+        }
+        .mesa-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-glow); }
+        .mesa-btn.selected { border-color: var(--green); background: var(--green); color: #000; }
+
+        .modal-loading { text-align: center; padding: 2rem; color: var(--muted); font-size: .9rem; }
+
+        /* ══════════════════════════════════════════
+           NOTIFICACIÓN PEDIDO LISTO
+        ══════════════════════════════════════════ */
+        .listo-overlay {
+            position: fixed; inset: 0; z-index: 4000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1.5rem;
+            opacity: 0; pointer-events: none;
+            transition: opacity .4s;
+        }
+        .listo-overlay.show {
+            opacity: 1; pointer-events: all;
+            background: rgba(0,0,0,.85);
+            backdrop-filter: blur(10px);
+        }
+
+        .listo-card {
+            background: var(--surface);
+            border: 2px solid var(--green);
+            border-radius: 1.5rem;
+            padding: 2.5rem 2rem;
+            max-width: 380px; width: 100%;
+            text-align: center;
+            box-shadow: 0 0 80px var(--green-glow), 0 24px 60px rgba(0,0,0,.8);
+            animation: listaIn .5s cubic-bezier(.22,1,.36,1);
+            position: relative; overflow: hidden;
+        }
+
+        @keyframes listaIn { from { transform: scale(.8) translateY(30px); opacity:0; } to { transform: scale(1) translateY(0); opacity:1; } }
+
+        /* Pulso verde en el fondo */
+        .listo-card::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse 70% 60% at 50% 100%, var(--green-glow), transparent);
+            pointer-events: none;
+        }
+
+        .listo-icon {
+            width: 90px; height: 90px; margin: 0 auto 1.5rem;
+            background: var(--green-glow);
+            border: 3px solid var(--green);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            animation: ringPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes ringPulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.5); }
+            50%      { box-shadow: 0 0 0 18px rgba(34,197,94,0); }
+        }
+        .listo-icon svg { stroke: var(--green); width: 44px; height: 44px; }
+
+        .listo-label {
+            font-family: 'Space Mono', monospace;
+            font-size: .8rem; font-weight: 700; letter-spacing: .12em;
+            text-transform: uppercase; color: var(--green); margin-bottom: .5rem;
+        }
+
+        .listo-titulo {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.8rem; font-weight: 700; line-height: 1.2;
+            margin-bottom: .75rem;
+        }
+
+        .listo-mesa {
+            display: inline-block;
+            background: var(--green); color: #000;
+            font-family: 'Space Mono', monospace;
+            font-size: 1.1rem; font-weight: 700;
+            padding: .4rem 1.2rem; border-radius: 2rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .listo-desc { color: var(--muted); font-size: .95rem; line-height: 1.6; margin-bottom: 1.75rem; }
+
+        .btn-listo-ok {
+            width: 100%; padding: .95rem;
+            background: var(--green); color: #000;
+            border: none; border-radius: .85rem;
+            font-size: 1rem; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: .5rem;
+            transition: all .2s;
+        }
+        .btn-listo-ok:hover { background: var(--green-dim); }
+        .btn-listo-ok svg { width: 18px; height: 18px; }
+
+        /* Dots de carga en estado esperando */
+        .esperando-badge {
+            display: inline-flex; align-items: center; gap: .4rem;
+            background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.25);
+            padding: .3rem .85rem; border-radius: 2rem;
+            font-size: .78rem; font-weight: 600; color: var(--green);
+            margin-top: .5rem;
+        }
+        .dot-pulse { display: inline-flex; gap: 3px; }
+        .dot-pulse span {
+            width: 5px; height: 5px; border-radius: 50%; background: var(--green);
+            animation: dotBounce 1.2s ease-in-out infinite;
+        }
+        .dot-pulse span:nth-child(2) { animation-delay: .2s; }
+        .dot-pulse span:nth-child(3) { animation-delay: .4s; }
+        @keyframes dotBounce { 0%,80%,100% { opacity:.3; transform:scale(.8); } 40% { opacity:1; transform:scale(1); } }
+
         @media (max-width:768px) {
             .header h1 { font-size:1.9rem; }
             .items-grid { grid-template-columns:1fr; }
@@ -280,6 +425,38 @@
 </head>
 <body>
 
+    <!-- ══ MODAL DE SELECCIÓN DE MESA ══ -->
+    <div class="mesa-modal-overlay" id="mesa-modal-overlay">
+        <div class="mesa-modal">
+            <div class="mesa-modal-icon"><i data-lucide="map-pin"></i></div>
+            <h2>¿En qué <span>mesa</span> estás?</h2>
+            <p>Selecciona tu mesa para que podamos enviarte una notificación cuando tu pedido esté listo.</p>
+
+            <div class="mesas-btn-grid" id="mesas-btn-grid">
+                <div class="modal-loading">
+                    <i data-lucide="loader-2"></i> Cargando mesas...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ NOTIFICACIÓN PEDIDO LISTO ══ -->
+    <div class="listo-overlay" id="listo-overlay">
+        <div class="listo-card">
+            <div class="listo-icon"><i data-lucide="bell-ring"></i></div>
+            <div class="listo-label">¡Atención!</div>
+            <div class="listo-titulo">Tu pedido está listo 🎉</div>
+            <div class="listo-mesa" id="listo-mesa-nombre"></div>
+            <p class="listo-desc">
+                El mesero ya viene hacia tu mesa con tu pedido.<br>
+                ¡Gracias por tu paciencia!
+            </p>
+            <button class="btn-listo-ok" onclick="cerrarNotificacion()">
+                <i data-lucide="check-circle"></i> ¡Entendido!
+            </button>
+        </div>
+    </div>
+
     <a href="{{ url_for('login') }}" class="login-link">
         <i data-lucide="log-in"></i> Acceso Personal
     </a>
@@ -289,6 +466,17 @@
             <div class="header-icon"><i data-lucide="utensils"></i></div>
             <h1>Nuestro <span>Menú</span></h1>
             <p>Selecciona tus platos y envía tu pedido</p>
+            <div id="mesa-chip-wrap" style="display:none;">
+                <div class="mesa-chip" onclick="cambiarMesa()">
+                    <i data-lucide="map-pin"></i>
+                    <span id="mesa-chip-text">Mesa —</span>
+                    <i data-lucide="pencil" style="width:11px;height:11px;opacity:.6;"></i>
+                </div>
+                <div class="esperando-badge" id="esperando-badge" style="display:none;">
+                    <div class="dot-pulse"><span></span><span></span><span></span></div>
+                    Esperando tu pedido…
+                </div>
+            </div>
         </div>
 
         {% if categorias %}
@@ -307,24 +495,12 @@
                              data-nombre="{{ item.nombre }}"
                              data-precio="{{ item.precio|int }}">
 
-                            <div class="item-imagen-wrap {% if not item.imagen_url %}show-placeholder{% endif %}"
-                                 id="img-wrap-{{ item.id }}">
-
+                            <div class="item-imagen-wrap">
                                 {% if item.imagen_url %}
-                                {#
-                                    La URL se convierte a formato directo en el JS (resolverImagenDrive).
-                                    Aquí pasamos la URL original como data-src para que JS la procese.
-                                #}
-                                <img data-src="{{ item.imagen_url }}"
-                                     alt="{{ item.nombre }}"
-                                     id="img-{{ item.id }}"
-                                     loading="lazy">
+                                <img src="{{ item.imagen_url }}" alt="{{ item.nombre }}">
+                                {% else %}
+                                <div class="item-imagen-placeholder"><i data-lucide="image"></i></div>
                                 {% endif %}
-
-                                <div class="item-imagen-placeholder">
-                                    <i data-lucide="image"></i>
-                                </div>
-
                                 {% if not item.disponible %}
                                 <span class="no-disponible-badge">No disponible</span>
                                 {% endif %}
@@ -377,7 +553,7 @@
         </button>
     </div>
 
-    <!-- OVERLAY + PANEL -->
+    <!-- OVERLAY + PANEL CARRITO -->
     <div class="cart-overlay" id="cart-overlay" onclick="cerrarCarrito()"></div>
     <div class="cart-panel" id="cart-panel">
         <div class="cart-panel-header">
@@ -392,10 +568,13 @@
             <span class="cart-total-value" id="cart-total-value">$0</span>
         </div>
 
+        <!-- Mesa seleccionada (no editable aquí, va por el modal) -->
         <div class="mesa-section">
-            <div class="field-label"><i data-lucide="map-pin"></i> Número de mesa</div>
-            <input type="number" class="mesa-input" id="mesa-input"
-                   placeholder="¿Cuál es tu número de mesa?" min="1" max="99">
+            <div class="field-label"><i data-lucide="map-pin"></i> Tu mesa</div>
+            <div class="mesa-confirmada">
+                <span class="mesa-confirmada-nombre" id="mesa-confirmada-text">—</span>
+                <button class="btn-cambiar-mesa" onclick="cambiarMesa()">Cambiar</button>
+            </div>
         </div>
 
         <div class="notas-section">
@@ -415,7 +594,7 @@
             <div class="success-icon"><i data-lucide="check"></i></div>
             <h2>¡Pedido enviado!</h2>
             <div class="success-mesa" id="success-mesa-num"></div>
-            <p>Tu pedido ya está en cocina.<br>Te avisaremos cuando esté listo.</p>
+            <p>Tu pedido ya está en cocina.<br>Te avisaremos aquí cuando esté listo. 🔔</p>
             <button class="btn-nuevo-pedido" onclick="resetear()">Hacer otro pedido</button>
         </div>
     </div>
@@ -429,87 +608,87 @@
     <script>
         lucide.createIcons();
 
-        // ═══════════════════════════════════════════════════════
-        // GOOGLE DRIVE IMAGE RESOLVER
-        // Convierte cualquier link de Drive al formato embebible.
-        //
-        // Formatos que acepta:
-        //   https://drive.google.com/file/d/ID/view?usp=sharing
-        //   https://drive.google.com/open?id=ID
-        //   https://drive.google.com/uc?id=ID
-        //   https://lh3.googleusercontent.com/d/ID   (ya correcto)
-        //   Cualquier otra URL (se devuelve sin cambios)
-        // ═══════════════════════════════════════════════════════
-        function resolverImagenDrive(url) {
-            if (!url) return null;
+        /* ══════════════════════
+           ESTADO GLOBAL
+        ══════════════════════ */
+        const carrito = {};
+        let mesaSeleccionada = null;   // { id, nombre, numero }
+        let pedidoEnviado    = false;
+        let pollingInterval  = null;
+        let pedidosIdsNotificados = new Set(); // para no notificar dos veces el mismo pedido
 
-            // Ya está en formato directo de lh3
-            if (url.includes('lh3.googleusercontent.com')) return url;
+        /* ══════════════════════
+           MODAL DE MESA
+        ══════════════════════ */
+        async function cargarMesas() {
+            const grid = document.getElementById('mesas-btn-grid');
+            try {
+                const r    = await fetch('/api/mesas_publicas');
+                const data = await r.json();
 
-            let id = null;
-
-            // Formato: /file/d/ID/view
-            const matchFile = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-            if (matchFile) id = matchFile[1];
-
-            // Formato: ?id=ID  o  &id=ID
-            if (!id) {
-                const matchId = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-                if (matchId) id = matchId[1];
-            }
-
-            if (id) {
-                // Formato de thumbnail directo — funciona sin autenticación
-                // siempre que el archivo esté compartido como "Cualquier persona con el enlace"
-                return `https://lh3.googleusercontent.com/d/${id}`;
-            }
-
-            // No es un link de Drive conocido → devolver tal cual
-            return url;
-        }
-
-        // ═══════════════════════════════════════════════
-        // CARGA DE IMÁGENES con conversión Drive + fallback
-        // ═══════════════════════════════════════════════
-        function cargarImagenes() {
-            document.querySelectorAll('img[data-src]').forEach(img => {
-                const wrap   = img.closest('.item-imagen-wrap');
-                const rawUrl = img.dataset.src;
-                const url    = resolverImagenDrive(rawUrl);
-
-                if (!url) {
-                    wrap.classList.add('show-placeholder');
+                if (!data.length) {
+                    grid.innerHTML = '<p style="color:var(--muted);text-align:center;padding:1rem;">No hay mesas disponibles</p>';
                     return;
                 }
 
-                img.src = url;
-
-                img.onload = () => {
-                    wrap.classList.add('loaded');
-                };
-
-                img.onerror = () => {
-                    // Si falla lh3, intentar con el proxy uc de Drive como respaldo
-                    const id = url.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1];
-                    if (id && !img.dataset.retried) {
-                        img.dataset.retried = '1';
-                        img.src = `https://drive.google.com/uc?export=view&id=${id}`;
-                    } else {
-                        // Ningún formato funcionó → mostrar placeholder
-                        wrap.classList.add('show-placeholder');
-                    }
-                };
-            });
+                grid.innerHTML = data.map(m => `
+                    <button class="mesa-btn" data-id="${m.id}" data-nombre="${m.nombre}" data-numero="${m.numero ?? ''}"
+                            onclick="seleccionarMesa(${m.id}, '${m.nombre}', ${m.numero ?? 'null'})">
+                        ${m.nombre}
+                    </button>
+                `).join('');
+                lucide.createIcons();
+            } catch(e) {
+                grid.innerHTML = '<p style="color:var(--muted);text-align:center;padding:1rem;">Error al cargar mesas</p>';
+            }
         }
 
-        // Cargar imágenes al iniciar
-        document.addEventListener('DOMContentLoaded', cargarImagenes);
+        function seleccionarMesa(id, nombre, numero) {
+            mesaSeleccionada = { id, nombre, numero };
 
-        // ═══════════════════════════════
-        // CARRITO
-        // ═══════════════════════════════
-        const carrito = {};
+            // Marcar botón seleccionado
+            document.querySelectorAll('.mesa-btn').forEach(b => b.classList.remove('selected'));
+            event.target.classList.add('selected');
 
+            // Cerrar modal con pequeña pausa para feedback visual
+            setTimeout(() => {
+                document.getElementById('mesa-modal-overlay').classList.add('hidden');
+                actualizarChipMesa();
+            }, 280);
+        }
+
+        function cambiarMesa() {
+            cerrarCarrito();
+            document.getElementById('mesa-modal-overlay').classList.remove('hidden');
+            // Marcar la seleccionada si ya había una
+            if (mesaSeleccionada) {
+                setTimeout(() => {
+                    document.querySelectorAll('.mesa-btn').forEach(b => {
+                        b.classList.toggle('selected', parseInt(b.dataset.id) === mesaSeleccionada.id);
+                    });
+                }, 50);
+            }
+        }
+
+        function actualizarChipMesa() {
+            if (!mesaSeleccionada) return;
+            const nombre = mesaSeleccionada.nombre;
+            document.getElementById('mesa-chip-text').textContent = nombre;
+            document.getElementById('mesa-chip-wrap').style.display = '';
+            document.getElementById('mesa-confirmada-text').textContent = nombre;
+            // input oculto para compatibilidad
+            let hidden = document.getElementById('mesa-input');
+            if (!hidden) {
+                hidden = document.createElement('input');
+                hidden.type = 'hidden'; hidden.id = 'mesa-input';
+                document.body.appendChild(hidden);
+            }
+            hidden.value = mesaSeleccionada.numero ?? mesaSeleccionada.id;
+        }
+
+        /* ══════════════════════
+           CARRITO
+        ══════════════════════ */
         function cambiarCantidad(itemId, delta) {
             const card   = document.getElementById(`card-${itemId}`);
             const qtyEl  = document.getElementById(`qty-${itemId}`);
@@ -567,6 +746,10 @@
         }
 
         function abrirCarrito() {
+            if (!mesaSeleccionada) {
+                cambiarMesa();
+                return;
+            }
             renderCartItems();
             document.getElementById('cart-overlay').classList.add('visible');
             document.getElementById('cart-panel').classList.add('visible');
@@ -579,16 +762,17 @@
             document.body.style.overflow = '';
         }
 
+        /* ══════════════════════
+           ENVÍO DEL PEDIDO
+        ══════════════════════ */
         async function enviarPedido() {
-            const mesa  = document.getElementById('mesa-input').value.trim();
+            if (!mesaSeleccionada) {
+                cambiarMesa();
+                return;
+            }
             const notas = document.getElementById('notas-input').value.trim();
             const items = Object.values(carrito);
 
-            if (!mesa) {
-                mostrarToast('Por favor ingresa el número de mesa', true);
-                document.getElementById('mesa-input').focus();
-                return;
-            }
             if (items.length === 0) {
                 mostrarToast('Agrega al menos un producto', true);
                 return;
@@ -600,22 +784,31 @@
             lucide.createIcons();
 
             try {
-                const res = await fetch('/api/pedido_publico', {
+                const body = {
+                    notas,
+                    items: items.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, precio: i.precio }))
+                };
+                // Enviar por numero si existe, si no por id (para mesas con nombre)
+                if (mesaSeleccionada.numero) {
+                    body.mesa = mesaSeleccionada.numero;
+                } else {
+                    body.mesa_id = mesaSeleccionada.id;
+                }
+
+                const res  = await fetch('/api/pedido_publico', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        mesa:  parseInt(mesa),
-                        notas: notas,
-                        items: items.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, precio: i.precio }))
-                    })
+                    body: JSON.stringify(body)
                 });
-
                 const data = await res.json();
 
                 if (data.success) {
                     cerrarCarrito();
-                    document.getElementById('success-mesa-num').textContent = `Mesa ${mesa}`;
+                    document.getElementById('success-mesa-num').textContent = mesaSeleccionada.nombre;
                     document.getElementById('success-overlay').classList.add('visible');
+                    pedidoEnviado = true;
+                    iniciarPolling();
+                    pedirPermisoNotificacion();
                 } else {
                     mostrarToast(data.error || 'Error al enviar el pedido', true);
                     btn.disabled = false;
@@ -638,12 +831,103 @@
                 const card = document.getElementById(`card-${id}`);
                 if (card) card.classList.remove('en-carrito');
             });
-            document.getElementById('mesa-input').value = '';
             document.getElementById('notas-input').value = '';
             document.getElementById('success-overlay').classList.remove('visible');
+            pedidoEnviado = false;
+            pedidosIdsNotificados.clear();
+            document.getElementById('esperando-badge').style.display = 'none';
+            detenerPolling();
             actualizarUI();
         }
 
+        /* ══════════════════════
+           POLLING DE ESTADO
+        ══════════════════════ */
+        function iniciarPolling() {
+            document.getElementById('esperando-badge').style.display = 'inline-flex';
+            detenerPolling();
+            pollingInterval = setInterval(verificarEstado, 6000); // cada 6 seg
+            setTimeout(verificarEstado, 2000); // primer check rápido
+        }
+
+        function detenerPolling() {
+            if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+        }
+
+        async function verificarEstado() {
+            if (!mesaSeleccionada || !pedidoEnviado) return;
+            try {
+                const url = `/api/estado_pedidos_mesa?mesa_id=${mesaSeleccionada.id}`;
+                const r   = await fetch(url);
+                const d   = await r.json();
+
+                if (d.tiene_listos) {
+                    // Filtrar solo los que no hemos notificado aún
+                    const nuevos = d.pedidos_ids_listos.filter(id => !pedidosIdsNotificados.has(id));
+                    if (nuevos.length > 0) {
+                        nuevos.forEach(id => pedidosIdsNotificados.add(id));
+                        mostrarNotificacionListo();
+                    }
+                }
+            } catch(e) { /* silencioso */ }
+        }
+
+        /* ══════════════════════
+           NOTIFICACIÓN LISTO
+        ══════════════════════ */
+        function mostrarNotificacionListo() {
+            // Vibrar si es móvil
+            if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 500]);
+
+            // Sonido con Web Audio API
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                [0, 300, 600].forEach(delay => {
+                    setTimeout(() => {
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.connect(g); g.connect(ctx.destination);
+                        o.type = 'sine';
+                        o.frequency.setValueAtTime(660, ctx.currentTime);
+                        o.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + .2);
+                        g.gain.setValueAtTime(.5, ctx.currentTime);
+                        g.gain.exponentialRampToValueAtTime(.01, ctx.currentTime + .35);
+                        o.start(ctx.currentTime); o.stop(ctx.currentTime + .38);
+                    }, delay);
+                });
+            } catch(e) {}
+
+            // Notificación del navegador (si hay permiso)
+            if (Notification?.permission === 'granted') {
+                const n = new Notification('🍽️ ¡Tu pedido está listo!', {
+                    body: `${mesaSeleccionada.nombre} — El mesero ya va hacia ti.`,
+                    icon: '/static/favicon.ico',
+                    tag: 'pedido-listo',
+                    requireInteraction: true
+                });
+                n.onclick = () => { window.focus(); n.close(); };
+            }
+
+            // Overlay grande
+            document.getElementById('listo-mesa-nombre').textContent = mesaSeleccionada.nombre;
+            document.getElementById('listo-overlay').classList.add('show');
+            document.getElementById('esperando-badge').style.display = 'none';
+            detenerPolling();
+        }
+
+        function cerrarNotificacion() {
+            document.getElementById('listo-overlay').classList.remove('show');
+        }
+
+        function pedirPermisoNotificacion() {
+            if (Notification?.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+
+        /* ══════════════════════
+           TOAST
+        ══════════════════════ */
         function mostrarToast(msg, esError = false) {
             const toast = document.getElementById('toast');
             document.getElementById('toast-text').textContent = msg;
@@ -651,6 +935,11 @@
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 3500);
         }
+
+        /* ══════════════════════
+           INIT
+        ══════════════════════ */
+        cargarMesas();
     </script>
 </body>
 </html>
