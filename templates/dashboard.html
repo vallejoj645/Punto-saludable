@@ -680,7 +680,172 @@
             </p>
         </div>
 
-        <!-- SECCIÓN: Accesos Rápidos para ADMINISTRADORES -->
+        <!-- ══ SECCIÓN SUPERIOR: Leyenda + Estado de Mesas ══ -->
+        {% if current_user.rol != 'cocina' %}
+
+        <div class="estados-leyenda">
+            <h3>Leyenda de Estados de Cocina</h3>
+            <div class="leyenda-grid">
+                <div class="leyenda-item"><div class="leyenda-color color-libre"></div><span>🟢 Libre</span></div>
+                <div class="leyenda-item"><div class="leyenda-color color-pendiente"></div><span>🟡 Pendiente</span></div>
+                <div class="leyenda-item"><div class="leyenda-color color-preparando"></div><span>🔵 Preparando</span></div>
+                <div class="leyenda-item"><div class="leyenda-color color-listo"></div><span>🟠 Listo para Servir</span></div>
+                <div class="leyenda-item"><div class="leyenda-color color-entregado"></div><span>🟢 Entregado</span></div>
+            </div>
+        </div>
+
+        <div class="mesas-section-title">🪑 Estado de las Mesas</div>
+
+        <div class="mesas-grid">
+            {% for mesa in mesas %}
+            {% set info = info_mesas[mesa.id] %}
+            {% set estado_dominante = 'libre' %}
+            {% if info.sesion %}
+                {% set tiene_pendiente = info.pedidos|selectattr('estado', 'equalto', 'pendiente')|list|length > 0 %}
+                {% set tiene_preparando = info.pedidos|selectattr('estado', 'equalto', 'preparando')|list|length > 0 %}
+                {% set tiene_listo = info.pedidos|selectattr('estado', 'equalto', 'listo')|list|length > 0 %}
+                {% set todos_entregados = info.pedidos|selectattr('estado', 'equalto', 'entregado')|list|length == info.pedidos|length %}
+                {% if tiene_listo %}{% set estado_dominante = 'listo' %}
+                {% elif tiene_preparando %}{% set estado_dominante = 'preparando' %}
+                {% elif tiene_pendiente %}{% set estado_dominante = 'pendiente' %}
+                {% elif todos_entregados %}{% set estado_dominante = 'entregado' %}
+                {% endif %}
+            {% endif %}
+
+            <div class="mesa-card mesa-{{ estado_dominante }}">
+                <span class="estado-cocina-badge estado-{{ estado_dominante }}">
+                    {% if estado_dominante == 'libre' %}Libre
+                    {% elif estado_dominante == 'pendiente' %}Pendiente
+                    {% elif estado_dominante == 'preparando' %}Preparando
+                    {% elif estado_dominante == 'listo' %}Listo
+                    {% elif estado_dominante == 'entregado' %}Entregado
+                    {% endif %}
+                </span>
+                <div class="mesa-header"><h3>{{ mesa.display_name }}</h3></div>
+                {% if info.sesion %}
+                <div class="sesion-tiempo">Desde {{ info.hora_inicio }}</div>
+                <div class="mesa-info-compact">
+                    <div class="info-row">
+                        <span class="info-label">Pedidos:</span>
+                        <span class="info-value">{{ info.total_pedidos }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Pendientes:</span>
+                        <span class="info-value">
+                            {% if info.tiene_pendientes %}{{ info.pedidos|selectattr('pagado', 'equalto', False)|list|length }}
+                            {% else %}0 ✓{% endif %}
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="mesa-actions">
+                    <a href="{{ url_for('nuevo_pedido', mesa_id=mesa.id) }}" class="btn btn-primary btn-sm">+ Pedido</a>
+                    <a href="{{ url_for('ver_mesa', mesa_id=mesa.id) }}" class="btn btn-secondary btn-sm">Ver</a>
+                    {% if info.sesion %}
+                        {% if info.tiene_pendientes %}
+                        <a href="{{ url_for('pagar_mesa', mesa_id=mesa.id) }}" class="btn btn-success btn-sm btn-block"
+                           onclick="return confirm('¿Marcar todo como pagado?')">Pagar Todo</a>
+                        {% elif info.todos_entregados %}
+                        <a href="{{ url_for('facturar_sesion', sesion_id=info.sesion.id) }}"
+                           class="btn btn-info btn-sm btn-block" style="background:#06b6d4;">Facturar</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if not mesas %}
+        <div class="empty-state">
+            <h2>No hay mesas disponibles</h2>
+            <p>Configura las mesas desde el panel de administración</p>
+            {% if current_user.rol == 'admin' %}
+            <a href="{{ url_for('administrar_mesas') }}" class="btn btn-primary" style="margin-top:1rem;display:inline-block;">Configurar Mesas</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% endif %}{# /cocina #}
+
+        <div class="divider"></div>
+
+        <!-- ══ SECCIÓN INFERIOR: Accesos Rápidos ══ -->
+
+        {% if current_user.rol == 'admin' %}
+        <div class="quick-access-section">
+            <h2 class="section-title">Control Financiero</h2>
+            <div class="quick-access-grid">
+                <a href="{{ url_for('cuentas_por_pagar') }}" class="quick-access-card qa-danger">
+                    <div class="quick-access-title">Cuentas por Pagar</div><div class="quick-access-desc">Deudas con proveedores</div></a>
+                <a href="{{ url_for('cuentas_por_cobrar') }}" class="quick-access-card qa-success">
+                    <div class="quick-access-title">Cuentas por Cobrar</div><div class="quick-access-desc">Deudas de clientes</div></a>
+                <a href="{{ url_for('lista_presupuestos') }}" class="quick-access-card qa-warning">
+                    <div class="quick-access-title">Presupuestos</div><div class="quick-access-desc">Límites de gasto</div></a>
+                <a href="{{ url_for('reporte_financiero') }}" class="quick-access-card qa-info">
+                    <div class="quick-access-title">Reporte Financiero</div><div class="quick-access-desc">Ingresos vs Gastos</div></a>
+            </div>
+        </div>
+        <div class="divider"></div>
+        <div class="quick-access-section">
+            <h2 class="section-title">Gestión de Gastos e Ingresos</h2>
+            <div class="quick-access-grid">
+                <a href="{{ url_for('lista_gastos') }}" class="quick-access-card qa-danger">
+                    <div class="quick-access-title">Gestión de Gastos</div><div class="quick-access-desc">Registrar y consultar egresos</div></a>
+                <a href="{{ url_for('lista_proveedores') }}" class="quick-access-card">
+                    <div class="quick-access-title">Proveedores</div><div class="quick-access-desc">Base de datos de proveedores</div></a>
+                <a href="{{ url_for('lista_facturas') }}" class="quick-access-card qa-info">
+                    <div class="quick-access-title">Facturas</div><div class="quick-access-desc">Consultar facturas emitidas</div></a>
+                <a href="{{ url_for('historial') }}" class="quick-access-card qa-warning">
+                    <div class="quick-access-title">Historial</div><div class="quick-access-desc">Ver sesiones y ventas</div></a>
+            </div>
+        </div>
+        <div class="divider"></div>
+        <div class="quick-access-section">
+            <h2 class="section-title">⚙️ Configuración del Restaurante</h2>
+            <div class="quick-access-grid">
+                <a href="{{ url_for('administrar_menu') }}" class="quick-access-card qa-purple">
+                    <div class="quick-access-title">Gestionar Menú</div><div class="quick-access-desc">Editar platillos y precios</div></a>
+                <a href="{{ url_for('administrar_mesas') }}" class="quick-access-card">
+                    <div class="quick-access-title">Gestionar Mesas</div><div class="quick-access-desc">Configurar mesas</div></a>
+                <a href="{{ url_for('lista_consumos_internos') }}" class="quick-access-card qa-danger">
+                    <div class="quick-access-title">Consumo Interno</div><div class="quick-access-desc">Artículos uso interno</div></a>
+                <a href="{{ url_for('administrar_usuarios') }}" class="quick-access-card">
+                    <div class="quick-access-title">Usuarios</div><div class="quick-access-desc">Gestionar empleados</div></a>
+                <a href="{{ url_for('configuracion_restaurante') }}" class="quick-access-card">
+                    <div class="quick-access-title">Configuración</div><div class="quick-access-desc">Datos del restaurante</div></a>
+                <a href="{{ url_for('menu_publico') }}" class="quick-access-card qa-primary" target="_blank">
+                    <div class="quick-access-title">Menú Público</div><div class="quick-access-desc">Ver menú de clientes</div></a>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if current_user.rol == 'mesero' %}
+        <div class="quick-access-section">
+            <h2 class="section-title">Accesos Rápidos</h2>
+            <div class="quick-access-grid">
+                <a href="{{ url_for('historial') }}" class="quick-access-card qa-warning">
+                    <div class="quick-access-title">Historial</div><div class="quick-access-desc">Ver sesiones del día</div></a>
+                <a href="{{ url_for('lista_facturas') }}" class="quick-access-card qa-info">
+                    <div class="quick-access-title">Facturas</div><div class="quick-access-desc">Consultar facturas</div></a>
+                <a href="{{ url_for('menu_publico') }}" class="quick-access-card qa-primary" target="_blank">
+                    <div class="quick-access-title">Ver Menú</div><div class="quick-access-desc">Consultar platillos</div></a>
+                <a href="{{ url_for('cocina') }}" class="quick-access-card qa-success">
+                    <div class="quick-access-title">Estado Cocina</div><div class="quick-access-desc">Ver pedidos en preparación</div></a>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if current_user.rol == 'cocina' %}
+        <div class="quick-access-section">
+            <h2 class="section-title">Accesos Rápidos</h2>
+            <div class="quick-access-grid">
+                <a href="{{ url_for('cocina') }}" class="quick-access-card qa-primary">
+                    <div class="quick-access-title">Panel de Cocina</div><div class="quick-access-desc">Ver pedidos pendientes</div></a>
+                <a href="{{ url_for('menu_publico') }}" class="quick-access-card qa-success" target="_blank">
+                    <div class="quick-access-title">Ver Menú</div><div class="quick-access-desc">Consultar platillos</div></a>
+            </div>
+        </div>
+    <script>
         {% if current_user.rol == 'admin' %}
         
         <!-- Control Financiero -->
