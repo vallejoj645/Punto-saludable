@@ -876,16 +876,24 @@
         function hablarPedidoListo() {
             if (!window.speechSynthesis) return;
             window.speechSynthesis.cancel();
-            const msg = new SpeechSynthesisUtterance('Pedido listo, pase al mostrador a retirar su pedido');
-            msg.lang = 'es-MX'; msg.rate = 0.92; msg.pitch = 1.05; msg.volume = 1;
-            msg.onend = () => {
-                setTimeout(() => {
-                    const rep = new SpeechSynthesisUtterance('Pedido listo');
-                    rep.lang = 'es-MX'; rep.rate = 0.92; rep.volume = 1;
-                    window.speechSynthesis.speak(rep);
-                }, 600);
-            };
-            window.speechSynthesis.speak(msg);
+
+            const texto = 'Pedido listo, pase al mostrador a retirar su pedido';
+            const totalRepeticiones = 3;
+            let repeticion = 0;
+
+            function hablarUnaVez() {
+                if (repeticion >= totalRepeticiones) return;
+                repeticion++;
+                const msg = new SpeechSynthesisUtterance(texto);
+                msg.lang   = 'es-MX';
+                msg.rate   = 0.90;
+                msg.pitch  = 1.05;
+                msg.volume = 1;
+                msg.onend  = () => setTimeout(hablarUnaVez, 800); // pausa de 800ms entre repeticiones
+                window.speechSynthesis.speak(msg);
+            }
+
+            hablarUnaVez();
         }
 
         function mostrarNotificacionListo() {
