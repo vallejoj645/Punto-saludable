@@ -185,7 +185,6 @@
         .cart-item-qty { display:flex; align-items:center; gap:.4rem; }
         .cart-item-subtotal { font-family:'Space Mono',monospace; font-size:.9rem; font-weight:700; color:var(--green); min-width:70px; text-align:right; }
 
-        /* Mesa en carrito: solo muestra la seleccionada, no input manual */
         .mesa-section { background:var(--surface2); border:1px solid var(--border); border-radius:.75rem; padding:1.1rem; margin-bottom:1.25rem; }
         .field-label { display:flex; align-items:center; gap:.4rem; font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:.6rem; }
         .field-label svg { width:13px; height:13px; stroke:var(--muted); }
@@ -244,9 +243,7 @@
         .empty-state h2 { font-family:'Space Mono',monospace; font-size:1.5rem; color:var(--text); margin-bottom:.5rem; }
         .empty-state p { color:var(--muted); }
 
-        /* ══════════════════════════════════════════
-           MODAL SELECCIÓN DE MESA
-        ══════════════════════════════════════════ */
+        /* ══ MODAL SELECCIÓN DE MESA ══ */
         .mesa-modal-overlay {
             position: fixed; inset: 0;
             background: rgba(0,0,0,.92);
@@ -285,7 +282,6 @@
         .mesa-modal h2 span { color: var(--green); }
         .mesa-modal p { color: var(--muted); text-align: center; font-size: .9rem; margin-bottom: 1.75rem; }
 
-        /* Grid de botones de mesas */
         .mesas-btn-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
@@ -312,9 +308,7 @@
 
         .modal-loading { text-align: center; padding: 2rem; color: var(--muted); font-size: .9rem; }
 
-        /* ══════════════════════════════════════════
-           NOTIFICACIÓN PEDIDO LISTO
-        ══════════════════════════════════════════ */
+        /* ══ NOTIFICACIÓN PEDIDO LISTO ══ */
         .listo-overlay {
             position: fixed; inset: 0; z-index: 4000;
             display: none;
@@ -324,9 +318,7 @@
             -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
-        .listo-overlay.show {
-            display: flex;
-        }
+        .listo-overlay.show { display: flex; }
 
         .listo-card {
             background: var(--surface);
@@ -339,10 +331,8 @@
             animation: listaIn .5s cubic-bezier(.22,1,.36,1);
             position: relative; overflow: hidden;
         }
-
         @keyframes listaIn { from { transform: scale(.8) translateY(30px); opacity:0; } to { transform: scale(1) translateY(0); opacity:1; } }
 
-        /* Pulso verde en el fondo */
         .listo-card::before {
             content: '';
             position: absolute; inset: 0;
@@ -369,13 +359,11 @@
             font-size: .8rem; font-weight: 700; letter-spacing: .12em;
             text-transform: uppercase; color: var(--green); margin-bottom: .5rem;
         }
-
         .listo-titulo {
             font-family: 'Space Mono', monospace;
             font-size: 1.8rem; font-weight: 700; line-height: 1.2;
             margin-bottom: .75rem;
         }
-
         .listo-mesa {
             display: inline-block;
             background: var(--green); color: #000;
@@ -384,7 +372,6 @@
             padding: .4rem 1.2rem; border-radius: 2rem;
             margin-bottom: 1.25rem;
         }
-
         .listo-desc { color: var(--muted); font-size: .95rem; line-height: 1.6; margin-bottom: 1.75rem; }
 
         .btn-listo-ok {
@@ -398,7 +385,6 @@
         .btn-listo-ok:hover { background: var(--green-dim); }
         .btn-listo-ok svg { width: 18px; height: 18px; }
 
-        /* Dots de carga en estado esperando */
         .esperando-badge {
             display: inline-flex; align-items: center; gap: .4rem;
             background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.25);
@@ -431,7 +417,6 @@
             <div class="mesa-modal-icon"><i data-lucide="map-pin"></i></div>
             <h2>¿En qué <span>mesa</span> estás?</h2>
             <p>Selecciona tu mesa para que podamos enviarte una notificación cuando tu pedido esté listo.</p>
-
             <div class="mesas-btn-grid" id="mesas-btn-grid">
                 <div class="modal-loading">
                     <i data-lucide="loader-2"></i> Cargando mesas...
@@ -449,7 +434,7 @@
             <div class="listo-mesa" id="listo-mesa-nombre"></div>
             <p class="listo-desc">
                 Dirígete al <strong style="color:var(--text)">mostrador</strong> a retirar tu pedido.<br>
-                ¡Gracias por tu paciencia! 
+                ¡Gracias por tu paciencia!
             </p>
             <button class="btn-listo-ok" onclick="cerrarNotificacion()">
                 <i data-lucide="check-circle"></i> ¡Entendido!
@@ -568,7 +553,6 @@
             <span class="cart-total-value" id="cart-total-value">$0</span>
         </div>
 
-        <!-- Mesa seleccionada (no editable aquí, va por el modal) -->
         <div class="mesa-section">
             <div class="field-label"><i data-lucide="map-pin"></i> Tu mesa</div>
             <div class="mesa-confirmada">
@@ -608,18 +592,14 @@
     <script>
         lucide.createIcons();
 
-        /* ══════════════════════
-           ESTADO GLOBAL
-        ══════════════════════ */
+        /* ══ ESTADO GLOBAL ══ */
         const carrito = {};
-        let mesaSeleccionada = null;   // { id, nombre, numero }
-        let pedidoEnviado    = false;
-        let pollingInterval  = null;
-        let pedidosIdsNotificados = new Set(); // para no notificar dos veces el mismo pedido
+        let mesaSeleccionada      = null;   // { id, nombre, numero }
+        let pedidoEnviado         = false;
+        let pollingInterval       = null;
+        let pedidosIdsNotificados = new Set();
 
-        /* ══════════════════════
-           MODAL DE MESA
-        ══════════════════════ */
+        /* ══ MODAL DE MESA ══ */
         async function cargarMesas() {
             const grid = document.getElementById('mesas-btn-grid');
             try {
@@ -632,12 +612,22 @@
                 }
 
                 grid.innerHTML = data.map(m => `
-                    <button class="mesa-btn" data-id="${m.id}" data-nombre="${m.nombre}" data-numero="${m.numero ?? ''}"
-                            onclick="seleccionarMesa(${m.id}, '${m.nombre}', ${m.numero ?? 'null'}, this)">
+                    <button class="mesa-btn"
+                            data-id="${m.id}"
+                            data-nombre="${m.nombre}"
+                            data-numero="${m.numero ?? ''}"
+                            onclick="seleccionarMesa(${m.id}, '${m.nombre.replace(/'/g, "\\'")}', ${m.numero ?? 'null'}, this)">
                         ${m.nombre}
                     </button>
                 `).join('');
                 lucide.createIcons();
+
+                // Marcar la guardada si ya hay una
+                if (mesaSeleccionada) {
+                    document.querySelectorAll('.mesa-btn').forEach(b => {
+                        b.classList.toggle('selected', parseInt(b.dataset.id) === mesaSeleccionada.id);
+                    });
+                }
             } catch(e) {
                 grid.innerHTML = '<p style="color:var(--muted);text-align:center;padding:1rem;">Error al cargar mesas</p>';
             }
@@ -657,7 +647,6 @@
         function cambiarMesa() {
             cerrarCarrito();
             document.getElementById('mesa-modal-overlay').classList.remove('hidden');
-            // Marcar la seleccionada si ya había una
             if (mesaSeleccionada) {
                 setTimeout(() => {
                     document.querySelectorAll('.mesa-btn').forEach(b => {
@@ -673,19 +662,9 @@
             document.getElementById('mesa-chip-text').textContent = nombre;
             document.getElementById('mesa-chip-wrap').style.display = '';
             document.getElementById('mesa-confirmada-text').textContent = nombre;
-            // input oculto para compatibilidad
-            let hidden = document.getElementById('mesa-input');
-            if (!hidden) {
-                hidden = document.createElement('input');
-                hidden.type = 'hidden'; hidden.id = 'mesa-input';
-                document.body.appendChild(hidden);
-            }
-            hidden.value = mesaSeleccionada.numero ?? mesaSeleccionada.id;
         }
 
-        /* ══════════════════════
-           CARRITO
-        ══════════════════════ */
+        /* ══ CARRITO ══ */
         function cambiarCantidad(itemId, delta) {
             const card   = document.getElementById(`card-${itemId}`);
             const qtyEl  = document.getElementById(`qty-${itemId}`);
@@ -743,10 +722,7 @@
         }
 
         function abrirCarrito() {
-            if (!mesaSeleccionada) {
-                cambiarMesa();
-                return;
-            }
+            if (!mesaSeleccionada) { cambiarMesa(); return; }
             renderCartItems();
             document.getElementById('cart-overlay').classList.add('visible');
             document.getElementById('cart-panel').classList.add('visible');
@@ -759,14 +735,10 @@
             document.body.style.overflow = '';
         }
 
-        /* ══════════════════════
-           ENVÍO DEL PEDIDO
-        ══════════════════════ */
+        /* ══ ENVÍO DEL PEDIDO ══ */
         async function enviarPedido() {
-            if (!mesaSeleccionada) {
-                cambiarMesa();
-                return;
-            }
+            if (!mesaSeleccionada) { cambiarMesa(); return; }
+
             const notas = document.getElementById('notas-input').value.trim();
             const items = Object.values(carrito);
 
@@ -785,7 +757,7 @@
                     notas,
                     items: items.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, precio: i.precio }))
                 };
-                // Enviar por numero si existe, si no por id (para mesas con nombre)
+                // Mesa con número: enviar numero; mesa con nombre: enviar id
                 if (mesaSeleccionada.numero) {
                     body.mesa = mesaSeleccionada.numero;
                 } else {
@@ -836,13 +808,13 @@
             document.getElementById('esperando-badge').style.display = 'none';
             detenerPolling();
             actualizarUI();
-            localStorage.removeItem('rp_pedidoEnviado');
-            localStorage.removeItem('rp_notificados');
+            try {
+                localStorage.removeItem('rp_pedidoEnviado');
+                localStorage.removeItem('rp_notificados');
+            } catch(e) {}
         }
 
-        /* ══════════════════════
-           PERSISTENCIA (localStorage)
-        ══════════════════════ */
+        /* ══ PERSISTENCIA ══ */
         function guardarEstado() {
             try {
                 if (mesaSeleccionada) localStorage.setItem('rp_mesa', JSON.stringify(mesaSeleccionada));
@@ -865,19 +837,17 @@
                 if (enviado === '1' && mesaSeleccionada) {
                     pedidoEnviado = true;
                     iniciarPolling();
-                    mostrarToast('Rastreando tu pedido anterior ');
+                    mostrarToast('Rastreando tu pedido anterior 👀');
                 }
             } catch(e) {}
         }
 
-        /* ══════════════════════
-           POLLING DE ESTADO
-        ══════════════════════ */
+        /* ══ POLLING ══ */
         function iniciarPolling() {
             document.getElementById('esperando-badge').style.display = 'inline-flex';
             detenerPolling();
-            pollingInterval = setInterval(verificarEstado, 6000); // cada 6 seg
-            setTimeout(verificarEstado, 2000); // primer check rápido
+            pollingInterval = setInterval(verificarEstado, 6000);
+            setTimeout(verificarEstado, 2000);
         }
 
         function detenerPolling() {
@@ -887,12 +857,12 @@
         async function verificarEstado() {
             if (!mesaSeleccionada || !pedidoEnviado) return;
             try {
-                const url = `/api/estado_pedidos_mesa?mesa_id=${mesaSeleccionada.id}`;
-                const r   = await fetch(url);
-                const d   = await r.json();
+                const r = await fetch(`/api/estado_pedidos_mesa?mesa_id=${mesaSeleccionada.id}`);
+                const d = await r.json();
 
-                if (d.todos_listos) {
-                    const nuevos = d.pedidos_ids_listos.filter(id => !pedidosIdsNotificados.has(id));
+                // ✅ CORREGIDO: usar 'tiene_listos' (no 'todos_listos')
+                if (d.tiene_listos) {
+                    const nuevos = (d.pedidos_ids_listos || []).filter(id => !pedidosIdsNotificados.has(id));
                     if (nuevos.length > 0) {
                         nuevos.forEach(id => pedidosIdsNotificados.add(id));
                         guardarEstado();
@@ -902,49 +872,47 @@
             } catch(e) { /* silencioso */ }
         }
 
-        /* ══════════════════════
-           NOTIFICACIÓN LISTO
-        ══════════════════════ */
-        /* ══════════════════════
-           VOZ — anuncia el pedido en voz alta
-        ══════════════════════ */
+        /* ══ NOTIFICACIÓN VOZ + VISUAL ══ */
         function hablarPedidoListo() {
             if (!window.speechSynthesis) return;
-
-            // Cancelar cualquier voz que esté sonando
             window.speechSynthesis.cancel();
-
-            const mensaje = new SpeechSynthesisUtterance('Pedido listo, pase al mostrador a retirar su pedido');
-            mensaje.lang  = 'es-MX';   // español — funciona en todos los móviles
-            mensaje.rate  = 0.92;       // un poco más lento para claridad
-            mensaje.pitch = 1.05;
-            mensaje.volume = 1;
-
-            // iOS Safari a veces necesita que la primera utterance sea corta
-            // Repetimos el mensaje 2 veces para asegurarnos de que se escuche
-            mensaje.onend = () => {
+            const msg = new SpeechSynthesisUtterance('Pedido listo, pase al mostrador a retirar su pedido');
+            msg.lang = 'es-MX'; msg.rate = 0.92; msg.pitch = 1.05; msg.volume = 1;
+            msg.onend = () => {
                 setTimeout(() => {
-                    const repetir = new SpeechSynthesisUtterance('Pedido listo');
-                    repetir.lang = 'es-MX';
-                    repetir.rate = 0.92;
-                    repetir.volume = 1;
-                    window.speechSynthesis.speak(repetir);
+                    const rep = new SpeechSynthesisUtterance('Pedido listo');
+                    rep.lang = 'es-MX'; rep.rate = 0.92; rep.volume = 1;
+                    window.speechSynthesis.speak(rep);
                 }, 600);
             };
-
-            window.speechSynthesis.speak(mensaje);
+            window.speechSynthesis.speak(msg);
         }
 
         function mostrarNotificacionListo() {
-            // Vibrar si es móvil
-            if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 500]);
+            if (navigator.vibrate) navigator.vibrate([300,100,300,100,500]);
 
-            // Voz: "Pedido listo, pase al mostrador..."
             hablarPedidoListo();
 
-            // Notificación del navegador (si hay permiso)
+            // Sonido
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                [0, 300, 600].forEach(delay => {
+                    setTimeout(() => {
+                        const o = ctx.createOscillator(), g = ctx.createGain();
+                        o.connect(g); g.connect(ctx.destination);
+                        o.type = 'sine';
+                        o.frequency.setValueAtTime(660, ctx.currentTime);
+                        o.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + .2);
+                        g.gain.setValueAtTime(.5, ctx.currentTime);
+                        g.gain.exponentialRampToValueAtTime(.01, ctx.currentTime + .35);
+                        o.start(ctx.currentTime); o.stop(ctx.currentTime + .38);
+                    }, delay);
+                });
+            } catch(e) {}
+
+            // Notificación del navegador
             if (Notification?.permission === 'granted') {
-                const n = new Notification(' ¡Tu pedido está listo!', {
+                const n = new Notification('🍽️ ¡Tu pedido está listo!', {
                     body: `${mesaSeleccionada.nombre} — Ve al mostrador a retirar tu pedido.`,
                     icon: '/static/favicon.ico',
                     tag: 'pedido-listo',
@@ -953,14 +921,13 @@
                 n.onclick = () => { window.focus(); n.close(); };
             }
 
-            // Forzar que la animación del card se repita
+            // Re-animar card
             const overlay = document.getElementById('listo-overlay');
             const card    = overlay.querySelector('.listo-card');
             card.style.animation = 'none';
-            card.offsetHeight;   // reflow forzado
+            card.offsetHeight;
             card.style.animation = '';
 
-            // Mostrar overlay
             document.getElementById('listo-mesa-nombre').textContent = mesaSeleccionada.nombre;
             overlay.classList.add('show');
             document.getElementById('esperando-badge').style.display = 'none';
@@ -969,19 +936,14 @@
 
         function cerrarNotificacion() {
             window.speechSynthesis?.cancel();
-            const overlay = document.getElementById('listo-overlay');
-            overlay.classList.remove('show');
+            document.getElementById('listo-overlay').classList.remove('show');
         }
 
         function pedirPermisoNotificacion() {
-            if (Notification?.permission === 'default') {
-                Notification.requestPermission();
-            }
+            if (Notification?.permission === 'default') Notification.requestPermission();
         }
 
-        /* ══════════════════════
-           TOAST
-        ══════════════════════ */
+        /* ══ TOAST ══ */
         function mostrarToast(msg, esError = false) {
             const toast = document.getElementById('toast');
             document.getElementById('toast-text').textContent = msg;
@@ -990,9 +952,7 @@
             setTimeout(() => toast.classList.remove('show'), 3500);
         }
 
-        /* ══════════════════════
-           INIT
-        ══════════════════════ */
+        /* ══ INIT ══ */
         cargarMesas();
         restaurarEstado();
     </script>
