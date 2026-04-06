@@ -119,6 +119,14 @@
         .item-imagen-placeholder svg { stroke:#2a2a2a; width:44px; height:44px; }
         .no-disponible-badge { position:absolute; top:.75rem; right:.75rem; background:var(--red); color:white; padding:.25rem .7rem; border-radius:.4rem; font-size:.72rem; font-weight:700; text-transform:uppercase; }
 
+        /* Skeleton mientras carga la imagen */
+        .img-loading {
+            background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+        }
+        @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
         .item-body { padding:1.1rem; display:flex; flex-direction:column; flex:1; }
         .item-nombre { font-size:1.02rem; font-weight:700; margin-bottom:.35rem; line-height:1.3; }
         .item-descripcion { color:var(--muted); font-size:.86rem; line-height:1.55; flex:1; margin-bottom:.9rem; }
@@ -158,7 +166,7 @@
         .btn-ver-carrito:hover { background:var(--green-dim); }
 
         /* ─── PANEL CARRITO ─── */
-        .cart-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); backdrop-filter:blur(4px); z-index:800; opacity:0; pointer-events:none; transition:opacity .3s; }
+        .cart-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); z-index:800; opacity:0; pointer-events:none; transition:opacity .3s; }
         .cart-overlay.visible { opacity:1; pointer-events:all; }
 
         .cart-panel {
@@ -247,6 +255,7 @@
         .mesa-modal-overlay {
             position: fixed; inset: 0;
             background: rgba(0,0,0,.92);
+            -webkit-backdrop-filter: blur(8px);
             backdrop-filter: blur(8px);
             z-index: 3000;
             display: flex; align-items: center; justify-content: center;
@@ -430,11 +439,11 @@
         <div class="listo-card">
             <div class="listo-icon"><i data-lucide="bell-ring"></i></div>
             <div class="listo-label">¡Atención!</div>
-            <div class="listo-titulo">Tu pedido está listo </div>
+            <div class="listo-titulo">Tu pedido está listo 🎉</div>
             <div class="listo-mesa" id="listo-mesa-nombre"></div>
             <p class="listo-desc">
                 Dirígete al <strong style="color:var(--text)">mostrador</strong> a retirar tu pedido.<br>
-                ¡Gracias por tu paciencia!
+                ¡Gracias por tu paciencia! 🙌
             </p>
             <button class="btn-listo-ok" onclick="cerrarNotificacion()">
                 <i data-lucide="check-circle"></i> ¡Entendido!
@@ -482,7 +491,11 @@
 
                             <div class="item-imagen-wrap">
                                 {% if item.imagen_url %}
-                                <img src="{{ item.imagen_url }}" alt="{{ item.nombre }}">
+                                {# La URL se convierte a formato directo en JS (fixDriveUrl) #}
+                                <img class="item-img img-loading"
+                                     data-src="{{ item.imagen_url }}"
+                                     alt="{{ item.nombre }}"
+                                     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
                                 {% else %}
                                 <div class="item-imagen-placeholder"><i data-lucide="image"></i></div>
                                 {% endif %}
@@ -578,7 +591,7 @@
             <div class="success-icon"><i data-lucide="check"></i></div>
             <h2>¡Pedido enviado!</h2>
             <div class="success-mesa" id="success-mesa-num"></div>
-            <p>Tu pedido ya está en cocina.<br>Te avisaremos aquí cuando esté listo.</p>
+            <p>Tu pedido ya está en cocina.<br>Te avisaremos aquí cuando esté listo. 🔔</p>
             <button class="btn-nuevo-pedido" onclick="resetear()">Hacer otro pedido</button>
         </div>
     </div>
@@ -592,9 +605,72 @@
     <script>
         lucide.createIcons();
 
+        /* ══════════════════════════════════════════
+           IMÁGENES DE GOOGLE DRIVE
+           Convierte cualquier URL de Drive al formato
+           de imagen directa que los navegadores sí cargan.
+
+           Formatos soportados:
+             /file/d/ID/view  →  uc?export=view&id=ID
+             /open?id=ID      →  uc?export=view&id=ID
+             /uc?id=ID        →  uc?export=view&id=ID  (agrega export)
+             otras URLs       →  sin cambios
+        ══════════════════════════════════════════ */
+        function fixDriveUrl(url) {
+            if (!url) return url;
+
+            // Extraer el ID de los distintos formatos de Drive
+            let id = null;
+
+            // Formato: /file/d/ID/view  o  /file/d/ID/preview
+            const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (m1) id = m1[1];
+
+            // Formato: /open?id=ID  o  /uc?id=ID
+            if (!id) {
+                const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                if (m2) id = m2[1];
+            }
+
+            if (id) {
+                // thumbnail es más permisivo con CORS que uc?export=view
+                // sz=w600 limita el tamaño para carga rápida en móvil
+                return `https://drive.google.com/thumbnail?id=${id}&sz=w600`;
+            }
+
+            return url; // URL no es de Drive, devolver intacta
+        }
+
+        /* Cargar todas las imágenes del menú con la URL corregida */
+        function cargarImagenes() {
+            document.querySelectorAll('img.item-img').forEach(img => {
+                const original = img.dataset.src;
+                if (!original) return;
+
+                const url = fixDriveUrl(original);
+                const tmp = new Image();
+
+                tmp.onload = () => {
+                    img.src = url;
+                    img.classList.remove('img-loading');
+                };
+
+                tmp.onerror = () => {
+                    // Falló la URL corregida — mostrar placeholder
+                    const wrap = img.closest('.item-imagen-wrap');
+                    if (wrap) {
+                        wrap.innerHTML = '<div class="item-imagen-placeholder"><i data-lucide="image"></i></div>';
+                        lucide.createIcons();
+                    }
+                };
+
+                tmp.src = url;
+            });
+        }
+
         /* ══ ESTADO GLOBAL ══ */
         const carrito = {};
-        let mesaSeleccionada      = null;   // { id, nombre, numero }
+        let mesaSeleccionada      = null;
         let pedidoEnviado         = false;
         let pollingInterval       = null;
         let pedidosIdsNotificados = new Set();
@@ -622,7 +698,6 @@
                 `).join('');
                 lucide.createIcons();
 
-                // Marcar la guardada si ya hay una
                 if (mesaSeleccionada) {
                     document.querySelectorAll('.mesa-btn').forEach(b => {
                         b.classList.toggle('selected', parseInt(b.dataset.id) === mesaSeleccionada.id);
@@ -757,7 +832,6 @@
                     notas,
                     items: items.map(i => ({ nombre: i.nombre, cantidad: i.cantidad, precio: i.precio }))
                 };
-                // Mesa con número: enviar numero; mesa con nombre: enviar id
                 if (mesaSeleccionada.numero) {
                     body.mesa = mesaSeleccionada.numero;
                 } else {
@@ -860,8 +934,7 @@
                 const r = await fetch(`/api/estado_pedidos_mesa?mesa_id=${mesaSeleccionada.id}`);
                 const d = await r.json();
 
-                // ✅ CORREGIDO: usar 'tiene_listos' (no 'todos_listos')
-                if (d.tiene_listos) {
+                if (d.todos_listos) {
                     const nuevos = (d.pedidos_ids_listos || []).filter(id => !pedidosIdsNotificados.has(id));
                     if (nuevos.length > 0) {
                         nuevos.forEach(id => pedidosIdsNotificados.add(id));
@@ -877,19 +950,18 @@
             if (!window.speechSynthesis) return;
             window.speechSynthesis.cancel();
 
-            const texto = 'Pedido listo, pase al mostrador a retirar su pedido ';
-            const totalRepeticiones = 3;
+            const texto = 'Pedido listo, pase al mostrador a retirar su pedido';
             let repeticion = 0;
 
             function hablarUnaVez() {
-                if (repeticion >= totalRepeticiones) return;
+                if (repeticion >= 3) return;
                 repeticion++;
                 const msg = new SpeechSynthesisUtterance(texto);
                 msg.lang   = 'es-MX';
                 msg.rate   = 0.90;
                 msg.pitch  = 1.05;
                 msg.volume = 1;
-                msg.onend  = () => setTimeout(hablarUnaVez, 800); // pausa de 800ms entre repeticiones
+                msg.onend  = () => setTimeout(hablarUnaVez, 800);
                 window.speechSynthesis.speak(msg);
             }
 
@@ -901,24 +973,6 @@
 
             hablarPedidoListo();
 
-            // Sonido
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                [0, 300, 600].forEach(delay => {
-                    setTimeout(() => {
-                        const o = ctx.createOscillator(), g = ctx.createGain();
-                        o.connect(g); g.connect(ctx.destination);
-                        o.type = 'sine';
-                        o.frequency.setValueAtTime(660, ctx.currentTime);
-                        o.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + .2);
-                        g.gain.setValueAtTime(.5, ctx.currentTime);
-                        g.gain.exponentialRampToValueAtTime(.01, ctx.currentTime + .35);
-                        o.start(ctx.currentTime); o.stop(ctx.currentTime + .38);
-                    }, delay);
-                });
-            } catch(e) {}
-
-            // Notificación del navegador
             if (Notification?.permission === 'granted') {
                 const n = new Notification('🍽️ ¡Tu pedido está listo!', {
                     body: `${mesaSeleccionada.nombre} — Ve al mostrador a retirar tu pedido.`,
@@ -929,7 +983,6 @@
                 n.onclick = () => { window.focus(); n.close(); };
             }
 
-            // Re-animar card
             const overlay = document.getElementById('listo-overlay');
             const card    = overlay.querySelector('.listo-card');
             card.style.animation = 'none';
@@ -963,6 +1016,7 @@
         /* ══ INIT ══ */
         cargarMesas();
         restaurarEstado();
+        cargarImagenes();   // ← convierte y carga todas las imágenes de Drive
     </script>
 </body>
 </html>
