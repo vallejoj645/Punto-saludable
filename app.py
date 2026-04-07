@@ -38,7 +38,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'clave-desarrollo-temporal-cambiar
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 # Preferir DATABASE_URL (Railway / Heroku). Si viene con `postgres://`, reemplazar por `postgresql://` para SQLAlchemy.
-database_url = os.environ.get('DATABASE_URL')
+database_url = os.environ.get('postgresql://postgres:rcNItuHKZRvpkhlJeqnaAoBFWxuXbnJr@postgres.railway.internal:5432/railway')
 if database_url:
     database_url = database_url.replace('postgres://', 'postgresql://')
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
