@@ -38,7 +38,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'clave-desarrollo-temporal-cambiar
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 # Preferir DATABASE_URL (Railway / Heroku). Si viene con `postgres://`, reemplazar por `postgresql://` para SQLAlchemy.
-database_url = os.environ.get('postgresql://postgres:rcNItuHKZRvpkhlJeqnaAoBFWxuXbnJr@postgres.railway.internal:5432/railway')
+database_url = os.environ.get('DATABASE_URL')
 if database_url:
     database_url = database_url.replace('postgres://', 'postgresql://')
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
@@ -3429,23 +3429,16 @@ else:
             # Migración segura para nombre_personalizado
             try:
                 with db.engine.connect() as conn:
-                    cols = [r[1] for r in conn.execute(text("PRAGMA table_info(mesa)")).fetchall()]
-                    if 'nombre_personalizado' not in cols:
+                    result = conn.execute(text("""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name='mesa' AND column_name='nombre_personalizado'
+                    """))
+                    if not result.fetchone():
                         conn.execute(text("ALTER TABLE mesa ADD COLUMN nombre_personalizado VARCHAR(40)"))
                         conn.commit()
                         print("✅ Columna nombre_personalizado agregada")
-                    info = conn.execute(text("PRAGMA table_info(mesa)")).fetchall()
-                    numero_notnull = next((r[3] for r in info if r[1] == 'numero'), 0)
-                    if numero_notnull == 1:
-                        print("Recreando tabla mesa para quitar NOT NULL en numero...")
-                        conn.execute(text("CREATE TABLE mesa_nueva (id INTEGER PRIMARY KEY, numero INTEGER, nombre_personalizado VARCHAR(40), capacidad INTEGER DEFAULT 4, activa BOOLEAN DEFAULT 1)"))
-                        conn.execute(text("INSERT INTO mesa_nueva (id, numero, nombre_personalizado, capacidad, activa) SELECT id, numero, nombre_personalizado, capacidad, activa FROM mesa"))
-                        conn.execute(text("DROP TABLE mesa"))
-                        conn.execute(text("ALTER TABLE mesa_nueva RENAME TO mesa"))
-                        conn.commit()
-                        print("✅ Tabla mesa migrada correctamente")
             except Exception as e:
-                print(f"Error en migracion de mesa: {e}")
+                print(f"Error en migración de mesa: {e}")
 
             # Crear admin si no existe
             if not Usuario.query.filter_by(username='admin').first():
