@@ -546,7 +546,42 @@
             .cuenta-tabla td { padding: 0.5rem 0.25rem; }
             .total-row.final { font-size: 1.25rem; }
         }
-    </style>
+    
+        /* ── Botón Editar ── */
+        .btn-edit { background: #f1f5f9; color: #475569; border: 1.5px solid #e2e8f0; }
+        .btn-edit:hover { background: #667eea; color: white; border-color: #667eea; }
+
+        /* ── Precio inline en pedido ── */
+        .pedido-precio { font-size: 0.88rem; color: #667eea; font-weight: 700; margin: 0.4rem 0 0.75rem; }
+
+        /* ── Modal Editar Pedido ── */
+        .edit-modal-content { max-width: 480px; }
+        .edit-form-group { margin-bottom: 1.25rem; }
+        .edit-form-group label { display: block; font-weight: 600; font-size: 0.88rem; color: #334155; margin-bottom: 0.4rem; }
+        .edit-form-group input,
+        .edit-form-group textarea {
+            width: 100%; padding: 0.75rem 0.875rem; border: 1.5px solid #e2e8f0;
+            border-radius: 0.5rem; font-size: 0.95rem; font-family: inherit;
+            background: #f8fafc; transition: border-color 0.2s;
+        }
+        .edit-form-group input:focus,
+        .edit-form-group textarea:focus { outline: none; border-color: #667eea; background: white; }
+        .edit-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .edit-total-preview {
+            background: #f1f5f9; border-radius: 0.5rem; padding: 0.75rem 1rem;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1.25rem; font-size: 0.9rem; color: #475569;
+        }
+        .edit-total-preview strong { font-size: 1.1rem; color: #667eea; }
+        .edit-actions { display: flex; gap: 0.75rem; }
+        .btn-save { flex: 2; padding: 0.875rem; background: linear-gradient(135deg,#667eea,#764ba2); color: white; border: none; border-radius: 0.625rem; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: opacity 0.2s; }
+        .btn-save:hover { opacity: 0.9; }
+        .btn-cancel-edit { flex: 1; padding: 0.875rem; border: 1.5px solid #e2e8f0; background: white; border-radius: 0.625rem; font-weight: 600; cursor: pointer; color: #64748b; font-size: 0.95rem; }
+        .btn-cancel-edit:hover { background: #f1f5f9; }
+
+        @media (max-width: 520px) {
+            .edit-form-row { grid-template-columns: 1fr; }
+        }</style>
 </head>
 <body>
     <nav class="navbar">
@@ -621,6 +656,18 @@
                         {% elif pedido.estado == 'listo' %}
                         <a href="{{ url_for('actualizar_estado', pedido_id=pedido.id, estado='entregado') }}"
                            class="btn btn-primary btn-xs">✓ Entregado</a>
+                        {% endif %}
+                        {% if not pedido.pagado %}
+                        <button class="btn btn-edit btn-xs"
+                            onclick="abrirEditar(
+                                {{ pedido.id }},
+                                {{ pedido.producto | tojson }},
+                                {{ pedido.cantidad }},
+                                {{ pedido.precio_unitario }},
+                                {{ (pedido.notas or '') | tojson }}
+                            )">
+                            ✏️ Editar
+                        </button>
                         {% endif %}
                     </div>
                 </div>
@@ -865,6 +912,48 @@
         {% endif %}
     </div>
 
+    <!-- ═══════════════════════════════════════
+         MODAL EDITAR PEDIDO
+    ═══════════════════════════════════════ -->
+    <div id="modalEditarPedido" class="modal">
+        <div class="modal-content edit-modal-content">
+            <div class="modal-header">
+                <h2>✏️ Editar Pedido</h2>
+                <button class="close" onclick="cerrarEditar()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarPedido" method="POST">
+                    <div class="edit-form-group">
+                        <label>Producto *</label>
+                        <input type="text" name="producto" id="edit_producto" required placeholder="Nombre del producto">
+                    </div>
+                    <div class="edit-form-row">
+                        <div class="edit-form-group">
+                            <label>Cantidad *</label>
+                            <input type="number" name="cantidad" id="edit_cantidad" min="1" required oninput="actualizarTotalEdit()">
+                        </div>
+                        <div class="edit-form-group">
+                            <label>Precio unitario *</label>
+                            <input type="number" name="precio_unitario" id="edit_precio" step="0.01" min="0" required oninput="actualizarTotalEdit()">
+                        </div>
+                    </div>
+                    <div class="edit-total-preview">
+                        <span>Total del pedido</span>
+                        <strong id="edit_total_preview">$0.00</strong>
+                    </div>
+                    <div class="edit-form-group">
+                        <label>Notas (opcional)</label>
+                        <textarea name="notas" id="edit_notas" rows="2" placeholder="Sin cebolla, término medio…"></textarea>
+                    </div>
+                    <div class="edit-actions">
+                        <button type="button" class="btn-cancel-edit" onclick="cerrarEditar()">Cancelar</button>
+                        <button type="submit" class="btn-save">Guardar cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="mesa-actions-fixed">
         <a href="{{ url_for('nuevo_pedido', mesa_id=mesa.id) }}" class="btn btn-primary">+ Nuevo Pedido</a>
     </div>
@@ -967,6 +1056,25 @@
             const numero = data.telefono.replace(/\D/g, '');
             const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
             window.open(url, '_blank');
+        }
+
+        // ── Modal editar pedido ──
+        function abrirEditar(id, producto, cantidad, precio, notas) {
+            document.getElementById('formEditarPedido').action = '/editar_pedido/' + id;
+            document.getElementById('edit_producto').value  = producto;
+            document.getElementById('edit_cantidad').value  = cantidad;
+            document.getElementById('edit_precio').value    = precio;
+            document.getElementById('edit_notas').value     = notas;
+            actualizarTotalEdit();
+            document.getElementById('modalEditarPedido').classList.add('show');
+        }
+        function cerrarEditar() {
+            document.getElementById('modalEditarPedido').classList.remove('show');
+        }
+        function actualizarTotalEdit() {
+            const cant   = parseFloat(document.getElementById('edit_cantidad').value) || 0;
+            const precio = parseFloat(document.getElementById('edit_precio').value)   || 0;
+            document.getElementById('edit_total_preview').textContent = '$' + (cant * precio).toFixed(2);
         }
     </script>
 </body>
