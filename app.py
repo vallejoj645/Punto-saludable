@@ -3643,3 +3643,18 @@ def cambiar_mesa(mesa_origen_id):
     db.session.commit()
     flash(f"✅ Mesa {mesa_origen.display_name} → {mesa_destino.display_name}: sesión y pedidos trasladados.", "success")
     return redirect(url_for("dashboard"))
+
+@app.route("/editar_pedido/<int:pedido_id>", methods=["POST"])
+@login_required
+def editar_pedido(pedido_id):
+    pedido = Pedido.query.get_or_404(pedido_id)
+    mesa_id = pedido.mesa_id
+
+    pedido.producto       = request.form.get("producto", pedido.producto).strip()
+    pedido.cantidad       = request.form.get("cantidad", pedido.cantidad, type=int)
+    pedido.precio_unitario = request.form.get("precio_unitario", pedido.precio_unitario, type=float)
+    pedido.notas          = request.form.get("notas", pedido.notas or "").strip()
+
+    db.session.commit()
+    flash(f"Pedido actualizado: {pedido.cantidad}x {pedido.producto}", "success")
+    return redirect(url_for("ver_mesa", mesa_id=mesa_id))
