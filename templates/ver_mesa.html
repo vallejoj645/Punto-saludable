@@ -658,14 +658,13 @@
                            class="btn btn-primary btn-xs">✓ Entregado</a>
                         {% endif %}
                         {% if not pedido.pagado %}
-                        <button class="btn btn-edit btn-xs"
-                            onclick="abrirEditar(
-                                {{ pedido.id }},
-                                {{ pedido.producto | tojson }},
-                                {{ pedido.cantidad }},
-                                {{ pedido.precio_unitario }},
-                                {{ (pedido.notas or '') | tojson }}
-                            )">
+                        <button type="button" class="btn btn-edit btn-xs"
+                            data-id="{{ pedido.id }}"
+                            data-producto="{{ pedido.producto | e }}"
+                            data-cantidad="{{ pedido.cantidad }}"
+                            data-precio="{{ pedido.precio_unitario }}"
+                            data-notas="{{ (pedido.notas or '') | e }}"
+                            onclick="abrirEditarBtn(this)">
                             ✏️ Editar
                         </button>
                         {% endif %}
@@ -1059,12 +1058,12 @@
         }
 
         // ── Modal editar pedido ──
-        function abrirEditar(id, producto, cantidad, precio, notas) {
-            document.getElementById('formEditarPedido').action = '/editar_pedido/' + id;
-            document.getElementById('edit_producto').value  = producto;
-            document.getElementById('edit_cantidad').value  = cantidad;
-            document.getElementById('edit_precio').value    = precio;
-            document.getElementById('edit_notas').value     = notas;
+        function abrirEditarBtn(btn) {
+            document.getElementById('formEditarPedido').action = '/editar_pedido/' + btn.dataset.id;
+            document.getElementById('edit_producto').value  = btn.dataset.producto;
+            document.getElementById('edit_cantidad').value  = btn.dataset.cantidad;
+            document.getElementById('edit_precio').value    = btn.dataset.precio;
+            document.getElementById('edit_notas').value     = btn.dataset.notas;
             actualizarTotalEdit();
             document.getElementById('modalEditarPedido').classList.add('show');
         }
