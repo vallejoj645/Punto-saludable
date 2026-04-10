@@ -3611,3 +3611,18 @@ def api_estado_pedidos_mesa():
         'pendientes':         len(pendientes),
         'pedidos_ids_listos': [p.id for p in listos]
     })
+
+@app.route('/mesa/<int:mesa_id>/pedido', methods=['POST'])
+def nuevo_pedido(mesa_id):
+    carrito = json.loads(request.form['carrito_json'])
+    for item in carrito:
+        pedido = Pedido(
+            mesa_id=mesa_id,
+            producto=item['nombre'],
+            cantidad=item['cantidad'],
+            precio_unitario=item['precio'],
+            notas=item.get('notas', '')
+        )
+        db.session.add(pedido)
+    db.session.commit()
+    return redirect(url_for('ver_mesa', mesa_id=mesa_id))
