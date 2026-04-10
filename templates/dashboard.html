@@ -714,6 +714,14 @@
         
         <div class="mesas-grid">
             {% for mesa in mesas %}
+            {% if info.sesion %}
+            <form onsubmit="return abrirModalCambio(event, {{ mesa.id }}, '{{ mesa.display_name }}')">
+                <button type="submit" class="btn btn-sm btn-block"
+                    style="margin-top:0.4rem;background:#8b5cf6;color:white;width:100%;">
+                    ⇄ Cambiar mesa
+                </button>
+            </form>
+            {% endif %}
             {% set info = info_mesas[mesa.id] %}
             
             {# Determinar el estado de cocina dominante #}
@@ -996,5 +1004,52 @@
         }, 30000);
         {% endif %}
     </script>
+    <!-- Modal Cambio de Mesa -->
+<div id="modalCambioMesa" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;align-items:center;justify-content:center;padding:1rem;">
+    <div style="background:white;border-radius:1rem;padding:1.5rem;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <h3 style="margin-bottom:0.25rem;font-size:1.1rem;">⇄ Cambiar mesa</h3>
+        <p style="font-size:0.9rem;color:#64748b;margin-bottom:1.25rem;">
+            Mover sesión y <strong>todos los pedidos</strong> de <strong id="modalOrigenNombre"></strong> a:
+        </p>
+        <form id="formCambioMesa" method="POST">
+            <select name="mesa_destino_id" required
+                style="width:100%;padding:0.75rem;border:1.5px solid #e2e8f0;border-radius:0.5rem;font-size:0.95rem;margin-bottom:1.25rem;background:#f8fafc;">
+                <option value="">— Selecciona mesa destino —</option>
+                {% for m in mesas %}
+                    {% if not info_mesas[m.id].sesion %}
+                    <option value="{{ m.id }}">{{ m.display_name }} (libre)</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            <div style="display:flex;gap:0.75rem;">
+                <button type="button" onclick="cerrarModal()"
+                    style="flex:1;padding:0.75rem;border:1.5px solid #e2e8f0;background:white;border-radius:0.625rem;font-weight:600;cursor:pointer;color:#64748b;">
+                    Cancelar
+                </button>
+                <button type="submit"
+                    style="flex:2;padding:0.75rem;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:white;border:none;border-radius:0.625rem;font-weight:700;cursor:pointer;">
+                    Confirmar cambio
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function abrirModalCambio(e, mesaId, mesaNombre) {
+    e.preventDefault();
+    document.getElementById('modalOrigenNombre').textContent = mesaNombre;
+    document.getElementById('formCambioMesa').action = '/cambiar_mesa/' + mesaId;
+    const modal = document.getElementById('modalCambioMesa');
+    modal.style.display = 'flex';
+    return false;
+}
+function cerrarModal() {
+    document.getElementById('modalCambioMesa').style.display = 'none';
+}
+document.getElementById('modalCambioMesa').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModal();
+});
+</script>
 </body>
 </html>
