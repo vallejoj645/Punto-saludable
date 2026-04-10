@@ -714,14 +714,6 @@
         
         <div class="mesas-grid">
             {% for mesa in mesas %}
-            {% if info.sesion %}
-            <form onsubmit="return abrirModalCambio(event, {{ mesa.id }}, '{{ mesa.display_name }}')">
-                <button type="submit" class="btn btn-sm btn-block"
-                    style="margin-top:0.4rem;background:#8b5cf6;color:white;width:100%;">
-                    ⇄ Cambiar mesa
-                </button>
-            </form>
-            {% endif %}
             {% set info = info_mesas[mesa.id] %}
             
             {# Determinar el estado de cocina dominante #}
@@ -794,6 +786,11 @@
                            class="btn btn-info btn-sm btn-block" 
                            style="background: #06b6d4;">Facturar</a>
                         {% endif %}
+                        <button class="btn btn-sm btn-block"
+                            style="background:#8b5cf6;color:white;border:none;cursor:pointer;width:100%;margin-top:0.2rem;"
+                            onclick="abrirModalCambio(event, {{ mesa.id }}, '{{ mesa.display_name }}')">
+                            ⇄ Cambiar mesa
+                        </button>
                     {% endif %}
                 </div>
             </div>
