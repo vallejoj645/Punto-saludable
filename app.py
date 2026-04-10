@@ -1241,10 +1241,8 @@ def nuevo_pedido(mesa_id):
     mesa = Mesa.query.get_or_404(mesa_id)
     
     if request.method == "POST":
-        producto = request.form.get("producto")
-        cantidad = request.form.get("cantidad", 1, type=int)
-        precio_unitario = request.form.get("precio_unitario", 0, type=float)
-        notas = request.form.get("notas", "")
+        import json
+        carrito = json.loads(request.form.get("carrito_json", "[]"))
         
         # Buscar o crear sesión activa para esta mesa
         sesion_activa = Sesion.query.filter_by(
@@ -1253,35 +1251,38 @@ def nuevo_pedido(mesa_id):
         ).first()
         
         if not sesion_activa:
-            # Crear nueva sesión
             sesion_activa = Sesion(mesa_id=mesa_id)
             db.session.add(sesion_activa)
-            db.session.flush()  # Para obtener el ID
+            db.session.flush()
         
-        pedido = Pedido(
-            mesa_id=mesa_id,
-            sesion_id=sesion_activa.id,
-            mesero_id=current_user.id,
-            producto=producto,
-            cantidad=cantidad,
-            precio_unitario=precio_unitario,
-            notas=notas
-        )
+        total_general = 0
+        for item in carrito:
+            cantidad = item['cantidad']
+            precio_unitario = item['precio']
+            pedido = Pedido(
+                mesa_id=mesa_id,
+                sesion_id=sesion_activa.id,
+                mesero_id=current_user.id,
+                producto=item['nombre'],
+                cantidad=cantidad,
+                precio_unitario=precio_unitario,
+                notas=item.get('notas', '')
+            )
+            db.session.add(pedido)
+            total_general += precio_unitario * cantidad
         
-        db.session.add(pedido)
         db.session.commit()
         
-        total = precio_unitario * cantidad
-        flash(f'Pedido agregado: {cantidad}x {producto} = ${total:.2f}', 'success')
+        total_items = sum(i['cantidad'] for i in carrito)
+        flash(f'Pedido agregado: {total_items} ítem(s) por ${total_general:.2f}', 'success')
         return redirect(url_for('ver_mesa', mesa_id=mesa_id))
     
-    # Obtener todos los items del menú disponibles, agrupados por categoría
+    # GET — sin cambios
     items_menu = ItemMenu.query.filter_by(disponible=True).order_by(
         ItemMenu.categoria_id, ItemMenu.orden
     ).all()
     
     return render_template("nuevo_pedido.html", mesa=mesa, items_menu=items_menu)
-
 @app.route("/mesa/<int:mesa_id>")
 @login_required
 def ver_mesa(mesa_id):
@@ -3612,17 +3613,3 @@ def api_estado_pedidos_mesa():
         'pedidos_ids_listos': [p.id for p in listos]
     })
 
-@app.route('/mesa/<int:mesa_id>/pedido', methods=['POST'])
-def nuevo_pedido(mesa_id):
-    carrito = json.loads(request.form['carrito_json'])
-    for item in carrito:
-        pedido = Pedido(
-            mesa_id=mesa_id,
-            producto=item['nombre'],
-            cantidad=item['cantidad'],
-            precio_unitario=item['precio'],
-            notas=item.get('notas', '')
-        )
-        db.session.add(pedido)
-    db.session.commit()
-    return redirect(url_for('ver_mesa', mesa_id=mesa_id))
