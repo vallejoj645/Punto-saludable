@@ -3613,3 +3613,33 @@ def api_estado_pedidos_mesa():
         'pedidos_ids_listos': [p.id for p in listos]
     })
 
+@app.route("/cambiar_mesa/<int:mesa_origen_id>", methods=["POST"])
+@login_required
+def cambiar_mesa(mesa_origen_id):
+    mesa_destino_id = request.form.get("mesa_destino_id", type=int)
+    if not mesa_destino_id:
+        flash("Selecciona una mesa destino.", "error")
+        return redirect(url_for("dashboard"))
+
+    # Validar que origen tiene sesión activa
+    sesion = Sesion.query.filter_by(mesa_id=mesa_origen_id, activa=True).first()
+    if not sesion:
+        flash("La mesa origen no tiene una sesión activa.", "error")
+        return redirect(url_for("dashboard"))
+
+    # Validar que destino está libre
+    sesion_destino = Sesion.query.filter_by(mesa_id=mesa_destino_id, activa=True).first()
+    if sesion_destino:
+        flash("La mesa destino ya está ocupada.", "error")
+        return redirect(url_for("dashboard"))
+
+    mesa_origen  = Mesa.query.get_or_404(mesa_origen_id)
+    mesa_destino = Mesa.query.get_or_404(mesa_destino_id)
+
+    # Mover sesión y todos sus pedidos
+    sesion.mesa_id = mesa_destino_id
+    Pedido.query.filter_by(sesion_id=sesion.id).update({"mesa_id": mesa_destino_id})
+
+    db.session.commit()
+    flash(f"✅ Mesa {mesa_origen.display_name} → {mesa_destino.display_name}: sesión y pedidos trasladados.", "success")
+    return redirect(url_for("dashboard"))
