@@ -1077,15 +1077,40 @@ document.addEventListener('click', () => {
 function reproducirSonido() {
     try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        [[880,0,0.15],[1100,0.18,0.15]].forEach(([freq,start,dur]) => {
-            const osc = audioCtx.createOscillator();
-            const g   = audioCtx.createGain();
-            osc.connect(g); g.connect(audioCtx.destination);
-            osc.type = 'sine'; osc.frequency.value = freq;
-            g.gain.setValueAtTime(0.4, audioCtx.currentTime + start);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + start + dur);
-            osc.start(audioCtx.currentTime + start);
-            osc.stop(audioCtx.currentTime + start + dur + 0.05);
+        const t = audioCtx.currentTime;
+
+        // 3 golpes de campana metálica con volumen máximo
+        [0, 0.28, 0.56].forEach(offset => {
+            // Oscilador principal — tono de campana
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const dist = audioCtx.createWaveShaper();
+
+            // Distorsión leve para más cuerpo
+            const curve = new Float32Array(256);
+            for (let i = 0; i < 256; i++) {
+                const x = (i * 2) / 256 - 1;
+                curve[i] = (Math.PI + 300) * x / (Math.PI + 300 * Math.abs(x));
+            }
+            dist.curve = curve;
+
+            osc1.type = 'triangle'; osc1.frequency.value = 1400;
+            osc2.type = 'square';   osc2.frequency.value = 1050;
+
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(dist);
+            dist.connect(audioCtx.destination);
+
+            // Ataque fuerte + caída rápida
+            gain.gain.setValueAtTime(0, t + offset);
+            gain.gain.linearRampToValueAtTime(1.0, t + offset + 0.01);  // ataque inmediato
+            gain.gain.exponentialRampToValueAtTime(0.3, t + offset + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + offset + 0.45);
+
+            osc1.start(t + offset); osc1.stop(t + offset + 0.5);
+            osc2.start(t + offset); osc2.stop(t + offset + 0.5);
         });
     } catch(e) {}
 }
