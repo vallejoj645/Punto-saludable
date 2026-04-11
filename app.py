@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, request, flash, session, jsonify
+from flask import Flask, render_template, redirect, url_for, request, flash, session, jsonify, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -10,6 +10,14 @@ from sqlalchemy import text
 from dotenv import load_dotenv
 import sys
 import logging
+
+# Web Push
+try:
+    from pywebpush import webpush, WebPushException
+    PUSH_DISPONIBLE = True
+except ImportError:
+    PUSH_DISPONIBLE = False
+    logging.warning("pywebpush no instalado — notificaciones push desactivadas")
 
 # Configurar logging detallado
 logging.basicConfig(
@@ -44,6 +52,13 @@ if database_url:
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'restaurante.db')
+
+# =========================
+# VAPID — Web Push
+# =========================
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
+VAPID_PUBLIC_KEY  = os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_CLAIMS      = {"sub": "mailto:" + os.environ.get('VAPID_CLAIMS_EMAIL', 'admin@restaurante.com')}
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Opciones para evitar errores de conexión en entornos PaaS
@@ -121,6 +136,18 @@ class Pedido(db.Model):
     def total(self):
         """Calcula el total del pedido"""
         return self.cantidad * self.precio_unitario
+
+class PushSubscripcion(db.Model):
+    """Guarda las suscripciones push de cada mesero."""
+    __tablename__ = 'push_subscripcion'
+    id          = db.Column(db.Integer, primary_key=True)
+    usuario_id  = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    endpoint    = db.Column(db.Text, nullable=False, unique=True)
+    p256dh      = db.Column(db.Text, nullable=False)
+    auth        = db.Column(db.Text, nullable=False)
+    creada      = db.Column(db.DateTime, default=datetime.now)
+
+    usuario = db.relationship('Usuario', backref='push_subscripciones')
 
 class CategoriaMenu(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1429,12 +1456,97 @@ def actualizar_estado(pedido_id, estado):
             pass
         db.session.commit()
         flash(f'Estado actualizado a: {estado}', 'success')
-        # Si se marcó como 'listo' y quien lo marcó NO es mesero, creamos una notificación para meseros
+        # Enviar push a todos los meseros cuando un pedido queda listo
         if estado == 'listo' and getattr(current_user, 'rol', None) != 'mesero':
-            # No necesitamos guardar una entidad de notificación; el JS de meseros hará polling por pedidos 'listo' recientes
-            pass
+            _enviar_push_pedido_listo(pedido)
     
     return redirect(request.referrer or url_for('dashboard'))
+
+
+def _enviar_push_pedido_listo(pedido):
+    """Envía notificación push a todos los meseros suscritos."""
+    if not PUSH_DISPONIBLE or not VAPID_PRIVATE_KEY:
+        return
+    subs = PushSubscripcion.query.all()
+    payload = json.dumps({
+        "title": "🍽️ Pedido listo",
+        "body":  f"{pedido.cantidad}× {pedido.producto} — {pedido.mesa.display_name if pedido.mesa else '?'}",
+        "mesa":  pedido.mesa.display_name if pedido.mesa else '?',
+    })
+    for sub in subs:
+        try:
+            webpush(
+                subscription_info={
+                    "endpoint": sub.endpoint,
+                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth}
+                },
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims=VAPID_CLAIMS
+            )
+        except WebPushException as ex:
+            # Suscripción expirada o inválida → eliminar
+            if ex.response and ex.response.status_code in (404, 410):
+                db.session.delete(sub)
+                db.session.commit()
+        except Exception:
+            pass
+
+
+# ── Servir el Service Worker desde la raíz (obligatorio para el scope /) ──
+@app.route('/sw.js')
+def service_worker():
+    sw_path = os.path.join(app.static_folder, 'sw.js')
+    with open(sw_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    return Response(content, mimetype='application/javascript',
+                    headers={'Service-Worker-Allowed': '/'})
+
+
+@app.route('/push/vapid_public')
+def push_vapid_public():
+    """Devuelve la clave pública VAPID para que el navegador se suscriba."""
+    return jsonify({'publicKey': VAPID_PUBLIC_KEY})
+
+
+@app.route('/push/suscribir', methods=['POST'])
+@login_required
+def push_suscribir():
+    """Guarda o actualiza la suscripción push del mesero."""
+    data     = request.get_json()
+    endpoint = data.get('endpoint')
+    p256dh   = data.get('keys', {}).get('p256dh')
+    auth     = data.get('keys', {}).get('auth')
+
+    if not endpoint or not p256dh or not auth:
+        return jsonify({'ok': False, 'error': 'Datos incompletos'}), 400
+
+    sub = PushSubscripcion.query.filter_by(endpoint=endpoint).first()
+    if sub:
+        sub.p256dh = p256dh
+        sub.auth   = auth
+    else:
+        sub = PushSubscripcion(
+            usuario_id=current_user.id,
+            endpoint=endpoint,
+            p256dh=p256dh,
+            auth=auth
+        )
+        db.session.add(sub)
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+@app.route('/push/desuscribir', methods=['POST'])
+@login_required
+def push_desuscribir():
+    """Elimina la suscripción push del dispositivo actual."""
+    data     = request.get_json()
+    endpoint = data.get('endpoint')
+    if endpoint:
+        PushSubscripcion.query.filter_by(endpoint=endpoint).delete()
+        db.session.commit()
+    return jsonify({'ok': True})
 
 @app.route("/marcar_pagado/<int:pedido_id>")
 @login_required
