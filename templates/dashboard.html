@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Restaurante</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+    <!-- PWA -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Restaurante">
+    <link rel="apple-touch-icon" href="/static/img/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/img/icon-192.png">
     <style>
         * {
             margin: 0;
@@ -1038,6 +1048,33 @@
      ===================================================== -->
 {% if current_user.rol == 'mesero' %}
 
+<!-- Banner de instalación PWA -->
+<div id="pwa-banner" style="
+    display:none; position:fixed; top:0; left:0; right:0; z-index:9998;
+    background:linear-gradient(135deg,#667eea,#764ba2); color:white;
+    padding:.85rem 1.25rem; display:none;
+    justify-content:space-between; align-items:center;
+    box-shadow:0 4px 15px rgba(0,0,0,0.2); gap:1rem;">
+    <div style="font-size:.9rem; font-weight:600; line-height:1.3;">
+        📲 <strong>Instala la app</strong><br>
+        <span style="font-weight:400; font-size:.8rem; opacity:.9;">Para recibir alertas con pantalla apagada</span>
+    </div>
+    <div style="display:flex; gap:.5rem; flex-shrink:0;">
+        <button id="pwa-instalar" style="
+            background:white; color:#667eea; border:none;
+            padding:.5rem 1rem; border-radius:.5rem;
+            font-weight:700; font-size:.85rem; cursor:pointer;">
+            Instalar
+        </button>
+        <button id="pwa-cerrar" style="
+            background:rgba(255,255,255,.2); color:white; border:none;
+            padding:.5rem .75rem; border-radius:.5rem;
+            font-size:.85rem; cursor:pointer;">
+            ✕
+        </button>
+    </div>
+</div>
+
 <!-- Banner visual (respaldo cuando la app está abierta) -->
 <div id="notif-banner" style="
     display:none; position:fixed; bottom:1.5rem; left:50%;
@@ -1065,6 +1102,38 @@
 const INTERVALO_MS  = 6000;
 const DURACION_MS   = 7000;
 const VIBRAR        = [300,150,300,150,500];
+
+// ═══════════════════════════════════════════════════════════
+//  PWA — Banner de instalación
+// ═══════════════════════════════════════════════════════════
+let deferredPrompt = null;
+const pwaBanner = document.getElementById('pwa-banner');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Mostrar el banner solo si no está ya instalada
+    if (!window.matchMedia('(display-mode: standalone)').matches) {
+        pwaBanner.style.display = 'flex';
+    }
+});
+
+document.getElementById('pwa-instalar').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    pwaBanner.style.display = 'none';
+});
+
+document.getElementById('pwa-cerrar').addEventListener('click', () => {
+    pwaBanner.style.display = 'none';
+});
+
+// Si ya está instalada como PWA, ocultar el banner
+if (window.matchMedia('(display-mode: standalone)').matches) {
+    pwaBanner.style.display = 'none';
+}
 
 // ═══════════════════════════════════════════════════════════
 //  AUDIO (sin archivos externos)
