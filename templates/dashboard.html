@@ -1032,6 +1032,191 @@
     </div>
 </div>
 
+<!-- =====================================================
+     SISTEMA DE NOTIFICACIONES PUSH — MESERO
+     Pantalla apagada + sonido + vibración
+     ===================================================== -->
+{% if current_user.rol == 'mesero' %}
+
+<!-- Banner visual (respaldo cuando la app está abierta) -->
+<div id="notif-banner" style="
+    display:none; position:fixed; bottom:1.5rem; left:50%;
+    transform:translateX(-50%); z-index:9999;
+    background:linear-gradient(135deg,#10b981,#059669); color:white;
+    padding:1rem 1.5rem; border-radius:1rem;
+    box-shadow:0 8px 30px rgba(0,0,0,0.25);
+    font-size:1rem; font-weight:600; max-width:90vw;
+    text-align:center; cursor:pointer; animation:popUp 0.4s ease-out;">
+    🍽️ <span id="notif-texto">Pedido listo</span>
+    <div style="font-size:.75rem;margin-top:.25rem;opacity:.85;">Toca para cerrar</div>
+</div>
+<style>
+@keyframes popUp {
+    from { opacity:0; transform:translateX(-50%) translateY(20px); }
+    to   { opacity:1; transform:translateX(-50%) translateY(0); }
+}
+</style>
+
+<script>
+(function () {
+// ═══════════════════════════════════════════════════════════
+//  CONFIGURACIÓN
+// ═══════════════════════════════════════════════════════════
+const INTERVALO_MS  = 6000;
+const DURACION_MS   = 7000;
+const VIBRAR        = [300,150,300,150,500];
+
+// ═══════════════════════════════════════════════════════════
+//  AUDIO (sin archivos externos)
+// ═══════════════════════════════════════════════════════════
+let audioCtx = null;
+document.addEventListener('click', () => {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}, { once: false });
+
+function reproducirSonido() {
+    try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        [[880,0,0.15],[1100,0.18,0.15]].forEach(([freq,start,dur]) => {
+            const osc = audioCtx.createOscillator();
+            const g   = audioCtx.createGain();
+            osc.connect(g); g.connect(audioCtx.destination);
+            osc.type = 'sine'; osc.frequency.value = freq;
+            g.gain.setValueAtTime(0.4, audioCtx.currentTime + start);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + start + dur);
+            osc.start(audioCtx.currentTime + start);
+            osc.stop(audioCtx.currentTime + start + dur + 0.05);
+        });
+    } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BANNER VISUAL (fallback con app abierta)
+// ═══════════════════════════════════════════════════════════
+let bannerTimer = null;
+const banner = document.getElementById('notif-banner');
+banner.addEventListener('click', cerrarBanner);
+
+function mostrarBanner(texto) {
+    document.getElementById('notif-texto').textContent = texto;
+    banner.style.display = 'block';
+    banner.style.animation = 'none';
+    void banner.offsetWidth;
+    banner.style.animation = 'popUp 0.4s ease-out';
+    clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(cerrarBanner, DURACION_MS);
+}
+function cerrarBanner() {
+    banner.style.opacity = '0';
+    banner.style.transition = 'opacity .3s';
+    setTimeout(() => { banner.style.display='none'; banner.style.opacity='1'; banner.style.transition=''; }, 300);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  POLLING (cuando la app está en primer plano)
+// ═══════════════════════════════════════════════════════════
+let ultimoSince = new Date().toISOString();
+
+function consultarPedidosListos() {
+    fetch('/notificaciones/pendientes?since=' + encodeURIComponent(ultimoSince))
+        .then(r => r.json())
+        .then(pedidos => {
+            if (!Array.isArray(pedidos) || !pedidos.length) return;
+            const masReciente = pedidos.reduce((a,p) => p.estado_actualizado > a ? p.estado_actualizado : a, ultimoSince);
+            ultimoSince = new Date(new Date(masReciente).getTime() + 1).toISOString();
+            const nombres = [...new Set(pedidos.map(p => p.mesa))];
+            const txt = pedidos.length === 1
+                ? `${pedidos[0].cantidad}× ${pedidos[0].producto} — ${pedidos[0].mesa}`
+                : `${pedidos.length} pedidos listos en: ${nombres.join(', ')}`;
+            mostrarBanner(txt);
+            reproducirSonido();
+            if ('vibrate' in navigator) navigator.vibrate(VIBRAR);
+        })
+        .catch(() => {});
+}
+setInterval(consultarPedidosListos, INTERVALO_MS);
+
+// ═══════════════════════════════════════════════════════════
+//  WEB PUSH — notificaciones con pantalla apagada
+// ═══════════════════════════════════════════════════════════
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw     = window.atob(base64);
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function iniciarPush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.log('Push no soportado en este navegador.');
+        return;
+    }
+
+    // 1. Registrar el Service Worker
+    let registro;
+    try {
+        registro = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    } catch (e) {
+        console.error('Error al registrar SW:', e);
+        return;
+    }
+
+    // 2. Pedir permiso de notificaciones (solo si no se ha pedido antes)
+    const permiso = await Notification.requestPermission();
+    if (permiso !== 'granted') {
+        console.log('Permiso de notificaciones denegado.');
+        return;
+    }
+
+    // 3. Obtener la clave pública VAPID
+    let vapidPublicKey;
+    try {
+        const res = await fetch('/push/vapid_public');
+        const dat = await res.json();
+        vapidPublicKey = dat.publicKey;
+        if (!vapidPublicKey) { console.log('VAPID no configurado.'); return; }
+    } catch(e) { return; }
+
+    // 4. Suscribirse al servidor push del navegador
+    let suscripcion;
+    try {
+        suscripcion = await registro.pushManager.subscribe({
+            userVisibleOnly:      true,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+        });
+    } catch(e) {
+        console.error('Error al suscribirse al push:', e);
+        return;
+    }
+
+    // 5. Enviar suscripción al servidor Flask
+    try {
+        await fetch('/push/suscribir', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(suscripcion.toJSON())
+        });
+        console.log('✅ Suscripción push registrada correctamente.');
+    } catch(e) {
+        console.error('Error al guardar suscripción:', e);
+    }
+}
+
+// Iniciar push al primer clic del usuario (requerimiento de los navegadores)
+let pushIniciado = false;
+document.addEventListener('click', function iniciarPushAlClic() {
+    if (pushIniciado) return;
+    pushIniciado = true;
+    iniciarPush();
+    document.removeEventListener('click', iniciarPushAlClic);
+});
+// También intentar directamente (funciona si ya se dio permiso antes)
+iniciarPush();
+
+})();
+</script>
+{% endif %}
+
 <script>
 function abrirModalCambio(e, mesaId, mesaNombre) {
     e.preventDefault();
