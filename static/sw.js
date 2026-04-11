@@ -1,15 +1,46 @@
 // =============================================================
-//  Service Worker — Notificaciones Push para Meseros
+//  Service Worker — Notificaciones Push + PWA offline básico
 //  Archivo: static/sw.js
 // =============================================================
 
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+const CACHE_NAME = 'restaurante-v1';
+const URLS_CACHE = ['/dashboard', '/static/css/styles.css', '/static/img/icon-192.png'];
+
+// ── Instalación: cachear recursos clave ──────────────────────
+self.addEventListener('install', (e) => {
+    e.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(URLS_CACHE).catch(() => {}))
+            .then(() => self.skipWaiting())
+    );
+});
+
+// ── Activación: limpiar caches viejas ───────────────────────
+self.addEventListener('activate', (e) => {
+    e.waitUntil(
+        caches.keys().then(keys =>
+            Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+        ).then(() => self.clients.claim())
+    );
+});
+
+// ── Fetch: responder desde caché si no hay red ───────────────
+self.addEventListener('fetch', (e) => {
+    if (e.request.method !== 'GET') return;
+    e.respondWith(
+        fetch(e.request)
+            .then(res => {
+                const clone = res.clone();
+                caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+                return res;
+            })
+            .catch(() => caches.match(e.request))
+    );
+});
 
 // ── Recibir push del servidor ─────────────────────────────────
 self.addEventListener('push', function (event) {
     let data = { title: '🍽️ Pedido listo', body: 'Un pedido está listo para servir.' };
-
     try {
         if (event.data) data = event.data.json();
     } catch (e) {
@@ -17,16 +48,14 @@ self.addEventListener('push', function (event) {
     }
 
     const opciones = {
-        body:    data.body  || 'Un pedido está listo.',
-        icon:    '/static/img/icon-192.png',   // Cambia por tu ícono si tienes uno
-        badge:   '/static/img/badge-72.png',   // Opcional: ícono pequeño en Android
-        vibrate: [300, 150, 300, 150, 500],
-        tag:     'pedido-listo',               // Agrupa notificaciones del mismo tipo
-        renotify: true,                        // Vuelve a notificar aunque ya haya una
-        data:    { mesa: data.mesa || '' },
-        actions: [
-            { action: 'ver', title: '👀 Ver pedidos' }
-        ]
+        body:     data.body || 'Un pedido está listo.',
+        icon:     '/static/img/icon-192.png',
+        badge:    '/static/img/badge-72.png',
+        vibrate:  [300, 150, 300, 150, 500],
+        tag:      'pedido-listo',
+        renotify: true,
+        data:     { mesa: data.mesa || '' },
+        actions:  [{ action: 'ver', title: '👀 Ver pedidos' }]
     };
 
     event.waitUntil(
@@ -37,23 +66,13 @@ self.addEventListener('push', function (event) {
 // ── Al tocar la notificación → abrir/enfocar el dashboard ────
 self.addEventListener('notificationclick', function (event) {
     event.notification.close();
-
-    const accion = event.action;
-    const url    = '/dashboard';   // Ajusta si tu ruta es distinta
-
     event.waitUntil(
         self.clients.matchAll({ type: 'window', includeUncontrolled: true })
             .then(function (clientes) {
-                // Si ya hay una ventana abierta, enfocarla
-                for (const cliente of clientes) {
-                    if (cliente.url.includes('/dashboard') && 'focus' in cliente) {
-                        return cliente.focus();
-                    }
+                for (const c of clientes) {
+                    if (c.url.includes('/dashboard') && 'focus' in c) return c.focus();
                 }
-                // Si no, abrir una nueva
-                if (self.clients.openWindow) {
-                    return self.clients.openWindow(url);
-                }
+                if (self.clients.openWindow) return self.clients.openWindow('/dashboard');
             })
     );
 });
