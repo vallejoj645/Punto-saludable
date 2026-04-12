@@ -2,10 +2,6 @@ from flask import Flask, render_template, redirect, url_for, request, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, render_template, redirect, url_for, request, flash, session, jsonify, Response
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, date
 import os
 import json
@@ -21,7 +17,6 @@ ZONA_COLOMBIA = ZoneInfo("America/Bogota")
 def ahora():
     """Retorna la hora actual en zona horaria de Colombia (UTC-5)."""
     return datetime.now(ZONA_COLOMBIA).replace(tzinfo=None)
-
 # Web Push
 try:
     from pywebpush import webpush, WebPushException
