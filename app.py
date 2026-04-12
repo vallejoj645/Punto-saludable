@@ -3,6 +3,14 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, date
+
+from zoneinfo import ZoneInfo          # Python 3.9+  (ya incluido, sin instalar nada)
+
+ZONA_COLOMBIA = ZoneInfo("America/Bogota")
+
+def ahora():
+    """Retorna la hora actual en zona horaria de Colombia (UTC-5)."""
+    return datetime.now(ZONA_COLOMBIA).replace(tzinfo=None)
 import os
 import json
 from sqlalchemy.exc import OperationalError
