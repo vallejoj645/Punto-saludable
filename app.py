@@ -2,15 +2,11 @@ from flask import Flask, render_template, redirect, url_for, request, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, render_template, redirect, url_for, request, flash, session, jsonify, Response
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, date
-
-from zoneinfo import ZoneInfo          # Python 3.9+  (ya incluido, sin instalar nada)
-
-ZONA_COLOMBIA = ZoneInfo("America/Bogota")
-
-def ahora():
-    """Retorna la hora actual en zona horaria de Colombia (UTC-5)."""
-    return datetime.now(ZONA_COLOMBIA).replace(tzinfo=None)
 import os
 import json
 from sqlalchemy.exc import OperationalError
@@ -18,6 +14,13 @@ from sqlalchemy import text
 from dotenv import load_dotenv
 import sys
 import logging
+from zoneinfo import ZoneInfo          # Python 3.9+ (incluido, sin instalar nada)
+
+ZONA_COLOMBIA = ZoneInfo("America/Bogota")
+
+def ahora():
+    """Retorna la hora actual en zona horaria de Colombia (UTC-5)."""
+    return datetime.now(ZONA_COLOMBIA).replace(tzinfo=None)
 
 # Web Push
 try:
@@ -114,7 +117,7 @@ class Mesa(db.Model):
 class Sesion(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     mesa_id = db.Column(db.Integer, db.ForeignKey('mesa.id'), nullable=False)
-    fecha_inicio = db.Column(db.DateTime, default=datetime.now)
+    fecha_inicio = db.Column(db.DateTime, default=ahora)
     fecha_fin = db.Column(db.DateTime, nullable=True)
     total = db.Column(db.Float, default=0)  # NUEVO CAMPO para guardar el total
     activa = db.Column(db.Boolean, default=True)
@@ -124,7 +127,7 @@ class Sesion(db.Model):
 
 class Pedido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    fecha = db.Column(db.DateTime, default=datetime.now)
+    fecha = db.Column(db.DateTime, default=ahora)
     mesa_id = db.Column(db.Integer, db.ForeignKey('mesa.id'), nullable=False)
     sesion_id = db.Column(db.Integer, db.ForeignKey('sesion.id'), nullable=True)
     mesero_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
@@ -135,7 +138,7 @@ class Pedido(db.Model):
     estado = db.Column(db.String(20), default='pendiente')  # pendiente, preparando, listo, entregado
     pagado = db.Column(db.Boolean, default=False)
     # Timestamp cuando se actualizó el estado por última vez
-    estado_actualizado = db.Column(db.DateTime, default=datetime.now)
+    estado_actualizado = db.Column(db.DateTime, default=ahora)
     
     mesa = db.relationship('Mesa', backref='pedidos')
     mesero = db.relationship('Usuario', backref='pedidos')
@@ -153,7 +156,7 @@ class PushSubscripcion(db.Model):
     endpoint    = db.Column(db.Text, nullable=False, unique=True)
     p256dh      = db.Column(db.Text, nullable=False)
     auth        = db.Column(db.Text, nullable=False)
-    creada      = db.Column(db.DateTime, default=datetime.now)
+    creada      = db.Column(db.DateTime, default=ahora)
 
     usuario = db.relationship('Usuario', backref='push_subscripciones')
 
@@ -201,7 +204,7 @@ class Factura(db.Model):
     fecha_vencimiento = db.Column(db.Date, nullable=True)  # Cuándo debe pagar el cliente
     fecha_pago_real = db.Column(db.DateTime, nullable=True)  # Cuándo pagó realmente
     saldo_pendiente = db.Column(db.Float, default=0)  # Si pagó parcialmente
-    fecha_emision = db.Column(db.DateTime, default=datetime.now)
+    fecha_emision = db.Column(db.DateTime, default=ahora)
     
     sesion = db.relationship('Sesion', backref='facturas')
 
@@ -232,7 +235,7 @@ class Presupuesto(db.Model):
     mes = db.Column(db.Integer, nullable=True)  # 1-12 para identificar el mes
     anio = db.Column(db.Integer, nullable=True)  # 2026, 2027, etc.
     activo = db.Column(db.Boolean, default=True)
-    fecha_creacion = db.Column(db.DateTime, default=datetime.now)
+    fecha_creacion = db.Column(db.DateTime, default=ahora)
     
     # Alertas
     alerta_porcentaje = db.Column(db.Integer, default=80)  # Alertar al 80%
@@ -320,7 +323,7 @@ class Proveedor(db.Model):
     direccion = db.Column(db.String(300))
     notas = db.Column(db.Text)
     activo = db.Column(db.Boolean, default=True)
-    fecha_registro = db.Column(db.DateTime, default=datetime.now)
+    fecha_registro = db.Column(db.DateTime, default=ahora)
     
     # Relación: Un proveedor puede tener muchos gastos
     gastos = db.relationship('Gasto', backref='proveedor', lazy='select')
@@ -330,7 +333,7 @@ class Gasto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     # Información básica del gasto (YA EXISTE)
-    fecha = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    fecha = db.Column(db.DateTime, default=ahora, nullable=False)
     concepto = db.Column(db.String(300), nullable=False)
     monto = db.Column(db.Float, nullable=False)
     
@@ -368,7 +371,7 @@ class ConsumoInterno(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('item_menu.id'), nullable=False)
     cantidad = db.Column(db.Integer, default=1)
     costo = db.Column(db.Float, default=0.0)  # Costo para el dueño por unidad
-    fecha = db.Column(db.DateTime, default=datetime.now)
+    fecha = db.Column(db.DateTime, default=ahora)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     notas = db.Column(db.Text)
 
@@ -410,7 +413,7 @@ class Domicilio(db.Model):
     # =================================================================
     # INFORMACIÓN DEL PEDIDO (fechas y tiempos)
     # =================================================================
-    fecha_pedido = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    fecha_pedido = db.Column(db.DateTime, default=ahora, nullable=False)
     fecha_entrega_estimada = db.Column(db.DateTime)                  # Opcional
     fecha_entrega_real = db.Column(db.DateTime)                      # Cuando se entrega
     
@@ -458,7 +461,7 @@ class Domicilio(db.Model):
     # =================================================================
     # TIMESTAMPS (control de tiempos)
     # =================================================================
-    estado_actualizado = db.Column(db.DateTime, default=datetime.now)
+    estado_actualizado = db.Column(db.DateTime, default=ahora)
     
     # =================================================================
     # RELACIONES (conexiones con otras tablas)
@@ -599,7 +602,7 @@ class Repartidor(db.Model):
     placa_vehiculo = db.Column(db.String(20))
     tipo_vehiculo = db.Column(db.String(50))  # moto, bicicleta, carro
     activo = db.Column(db.Boolean, default=True)
-    fecha_registro = db.Column(db.DateTime, default=datetime.now)
+    fecha_registro = db.Column(db.DateTime, default=ahora)
     
     # Estadísticas
     total_domicilios = db.Column(db.Integer, default=0)
