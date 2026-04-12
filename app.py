@@ -1250,7 +1250,7 @@ def dashboard():
                 'tiene_pendientes': any(not p.pagado for p in pedidos),
                 'todos_entregados': all(p.estado == 'entregado' for p in pedidos),
                 'total_pedidos': len(pedidos),
-                'hora_inicio': sesion_activa.fecha_inicio.strftime('%H:%M')
+                'hora_inicio': sesion_activa.fecha_inicio.strftime('%I:%M %p').lstrip('0').replace('AM','am').replace('PM','pm')
             }
         else:
             info_mesas[mesa.id] = {
