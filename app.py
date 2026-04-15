@@ -2656,14 +2656,9 @@ def init_db():
 
         if CategoriaGasto.query.count() == 0:
             categorias_default = [
-                {'nombre': 'Ingredientes y Materia Prima', 'descripcion': 'Compras de alimentos, bebidas y suministros de cocina', 'color': '#28a745'},
-                {'nombre': 'Salarios y Nómina', 'descripcion': 'Pagos a empleados, prestaciones y seguridad social', 'color': '#007bff'},
-                {'nombre': 'Servicios Públicos', 'descripcion': 'Agua, luz, gas, internet, teléfono', 'color': '#ffc107'},
-                {'nombre': 'Arriendo', 'descripcion': 'Pago de arriendo del local', 'color': '#dc3545'},
-                {'nombre': 'Mantenimiento', 'descripcion': 'Reparaciones, limpieza, mantenimiento de equipos', 'color': '#6c757d'},
-                {'nombre': 'Marketing', 'descripcion': 'Publicidad, redes sociales, volantes', 'color': '#e83e8c'},
-                {'nombre': 'Impuestos', 'descripcion': 'Impuestos, declaraciones, trámites legales', 'color': '#fd7e14'},
-                {'nombre': 'Otros Gastos', 'descripcion': 'Gastos misceláneos', 'color': '#6610f2'}
+                {'nombre': 'Materia Prima', 'descripcion': 'Compras de alimentos, bebidas y suministros de cocina', 'color': '#e67e22'},
+                {'nombre': 'Servicios Públicos', 'descripcion': 'Agua, luz, gas, internet, teléfono', 'color': '#2980b9'},
+                {'nombre': 'Nómina', 'descripcion': 'Pagos a empleados, prestaciones y seguridad social', 'color': '#27ae60'},
             ]
             
             for cat_data in categorias_default:
@@ -3515,21 +3510,72 @@ def crear_categorias_ahora():
         return f"Ya hay {total} categorías"
     
     categorias = [
-        {'nombre': 'Ingredientes y Materia Prima', 'color': '#28a745'},
-        {'nombre': 'Salarios y Nómina', 'color': '#007bff'},
-        {'nombre': 'Servicios Públicos', 'color': '#ffc107'},
-        {'nombre': 'Arriendo', 'color': '#dc3545'},
-        {'nombre': 'Mantenimiento', 'color': '#6c757d'},
-        {'nombre': 'Marketing', 'color': '#e83e8c'},
-        {'nombre': 'Impuestos', 'color': '#fd7e14'},
-        {'nombre': 'Otros Gastos', 'color': '#6610f2'}
+        {'nombre': 'Materia Prima', 'descripcion': 'Compras de alimentos, bebidas y suministros de cocina', 'color': '#e67e22'},
+        {'nombre': 'Servicios Públicos', 'descripcion': 'Agua, luz, gas, internet, teléfono', 'color': '#2980b9'},
+        {'nombre': 'Nómina', 'descripcion': 'Pagos a empleados, prestaciones y seguridad social', 'color': '#27ae60'},
     ]
     
     for c in categorias:
         db.session.add(CategoriaGasto(**c))
     
     db.session.commit()
-    return "✅ 8 categorías creadas!"
+    return "✅ 3 categorías creadas: Materia Prima, Servicios Públicos, Nómina"
+
+
+@app.route("/migrar_categorias_gasto")
+@login_required
+def migrar_categorias_gasto():
+    """
+    Reemplaza las categorías de gasto antiguas por las 3 oficiales:
+    Materia Prima, Servicios Públicos, Nómina.
+    Reasigna los gastos existentes a 'Materia Prima' si su categoría anterior
+    ya no existe.
+    Acceder una sola vez como admin: /migrar_categorias_gasto
+    """
+    if current_user.rol != 'admin':
+        return "No autorizado", 403
+
+    nuevas = [
+        {'nombre': 'Materia Prima',      'descripcion': 'Compras de alimentos, bebidas y suministros de cocina', 'color': '#e67e22'},
+        {'nombre': 'Servicios Públicos', 'descripcion': 'Agua, luz, gas, internet, teléfono',                   'color': '#2980b9'},
+        {'nombre': 'Nómina',             'descripcion': 'Pagos a empleados, prestaciones y seguridad social',   'color': '#27ae60'},
+    ]
+
+    # Obtener o crear las 3 categorías destino
+    cats_destino = {}
+    for data in nuevas:
+        cat = CategoriaGasto.query.filter_by(nombre=data['nombre']).first()
+        if not cat:
+            cat = CategoriaGasto(**data)
+            db.session.add(cat)
+            db.session.flush()
+        cats_destino[data['nombre']] = cat
+
+    id_materia_prima = cats_destino['Materia Prima'].id
+    ids_nuevos = {c.id for c in cats_destino.values()}
+
+    # Reasignar gastos que apunten a categorías que serán eliminadas
+    cats_viejas = CategoriaGasto.query.filter(
+        ~CategoriaGasto.id.in_(ids_nuevos)
+    ).all()
+
+    for cat_vieja in cats_viejas:
+        Gasto.query.filter_by(categoria_id=cat_vieja.id).update(
+            {'categoria_id': id_materia_prima}
+        )
+        Presupuesto.query.filter_by(categoria_id=cat_vieja.id).update(
+            {'categoria_id': id_materia_prima}
+        )
+        db.session.delete(cat_vieja)
+
+    db.session.commit()
+    return (
+        f"✅ Migración completa. Categorías activas: "
+        f"Materia Prima (id={cats_destino['Materia Prima'].id}), "
+        f"Servicios Públicos (id={cats_destino['Servicios Públicos'].id}), "
+        f"Nómina (id={cats_destino['Nómina'].id})"
+    )
+
     # =========================
     # EJECUCIÓN
     # =========================
