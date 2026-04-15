@@ -1,6 +1,6 @@
 {
   "name": "Restaurante - Panel",
-  "short_name": "Restaurante",
+  "short_name": "P-saludable",
   "description": "Panel de gestión del restaurante",
   "start_url": "/dashboard",
   "scope": "/",
