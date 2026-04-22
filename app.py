@@ -3822,6 +3822,7 @@ def editar_pedido(pedido_id):
     db.session.commit()
     flash(f"Pedido actualizado: {pedido.cantidad}x {pedido.producto}", "success")
     return redirect(url_for("ver_mesa", mesa_id=mesa_id))
+    
 @app.route('/eliminar_pedido/<int:pedido_id>')
 @login_required
 def eliminar_pedido(pedido_id):
@@ -3830,4 +3831,4 @@ def eliminar_pedido(pedido_id):
     db.session.delete(pedido)
     db.session.commit()
     flash('Pedido eliminado correctamente.', 'success')
-    return redirect(url_for('detalle_mesa', mesa_id=mesa_id))
+    return redirect(url_for('ver_mesa', mesa_id=mesa_id))
