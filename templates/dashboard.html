@@ -760,33 +760,7 @@
          <!-- SECCIÓN: Mesas del Restaurante (para Admin y Meseros) -->
         {% if current_user.rol != 'cocina' %}
         
-        <!-- Leyenda de Estados -->
-        <div class="estados-leyenda">
-            <h3>Leyenda de Estados de Cocina</h3>
-            <div class="leyenda-grid">
-                <div class="leyenda-item">
-                    <div class="leyenda-color color-libre"></div>
-                    <span>🟢 Libre</span>
-                </div>
-                <div class="leyenda-item">
-                    <div class="leyenda-color color-pendiente"></div>
-                    <span>🟡 Pendiente</span>
-                </div>
-                <div class="leyenda-item">
-                    <div class="leyenda-color color-preparando"></div>
-                    <span>🔵 Preparando</span>
-                </div>
-                <div class="leyenda-item">
-                    <div class="leyenda-color color-listo"></div>
-                    <span>🟠 Listo para Servir</span>
-                </div>
-                <div class="leyenda-item">
-                    <div class="leyenda-color color-entregado"></div>
-                    <span>🟢 Entregado</span>
-                </div>
-            </div>
-        </div>
-
+        
         <div class="mesas-section-title">🪑 Estado de las Mesas</div>
         
         <div class="mesas-grid">
