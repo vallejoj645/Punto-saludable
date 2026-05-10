@@ -122,22 +122,18 @@
 
         /* ── BOARD ───────────────────────────────── */
         .board {
-            max-width: 1800px; margin: 0 auto;
-            padding: 1.25rem 1.5rem;
-            display: flex;
-            gap: 1rem;
-            overflow-x: auto;
-            align-items: flex-start;
+            padding: 1rem 1.25rem;
+            display: grid;
+            /* columnas que se adaptan: mínimo 220px, máximo 1fr;
+               con muchos pedidos quedan más angostas, con pocos más anchas */
+            grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+            gap: .85rem;
+            align-items: start;
         }
-
-        /* scrollbar sutil */
-        .board::-webkit-scrollbar { height: 6px; }
-        .board::-webkit-scrollbar-track { background: transparent; }
-        .board::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
 
         /* ── TICKET CARD ─────────────────────────── */
         .ticket {
-            flex: 0 0 280px;
+            width: 100%;
             background: var(--surface);
             border-radius: var(--radius-card);
             box-shadow: var(--shadow-card);
@@ -314,10 +310,10 @@
         .toast-text { font-size: .85rem; font-weight: 500; }
 
         /* ── RESPONSIVE ──────────────────────────── */
-        @media (max-width: 700px) {
-            .board { flex-direction: column; overflow-x: visible; }
-            .ticket { flex: none; width: 100%; }
-            .topbar-stats { gap: .85rem; }
+        @media (max-width: 600px) {
+            .board { grid-template-columns: 1fr; padding: .75rem; }
+            .topbar-stats { gap: .75rem; }
+            .topbar-inner { gap: .75rem; }
         }
     </style>
 </head>
@@ -385,7 +381,7 @@
                 </div>
             </div>
             <span class="ticket-time {% if minutos > 15 %}fire{% elif minutos > 8 %}warn{% endif %}"
-                  data-inicio="{{ grupo.pedidos[0].fecha.timestamp() }}">
+                  data-minutos="{{ minutos }}">
                 <i data-lucide="clock"></i>
                 <span class="elapsed">{{ minutos }} min</span>
             </span>
@@ -500,13 +496,25 @@
         setTimeout(() => el.classList.remove('show'), 4500);
     }
 
+    /* ── Tiempo de carga de página (para calcular transcurrido sin timestamps) ── */
+    const PAGE_LOAD_MS = Date.now();
+
     /* ── Tiempos transcurridos ── */
     function updateElapsed() {
-        const now = Date.now() / 1000;
-        document.querySelectorAll('.ticket-time[data-inicio]').forEach(el => {
-            const mins = Math.floor((now - parseFloat(el.dataset.inicio)) / 60);
+        // Minutos transcurridos desde que cargó la página
+        const minsSinceLoad = (Date.now() - PAGE_LOAD_MS) / 60000;
+        document.querySelectorAll('.ticket-time[data-minutos]').forEach(el => {
+            // minutos iniciales calculados por el servidor (sin bug de zona horaria)
+            const initialMins = parseInt(el.dataset.minutos, 10);
+            const mins = Math.round(initialMins + minsSinceLoad);
             el.querySelector('.elapsed').textContent = mins + ' min';
             el.className = 'ticket-time' + (mins > 15 ? ' fire' : mins > 8 ? ' warn' : '');
+            // actualizar urgencia del ticket padre
+            const ticket = el.closest('.ticket');
+            if (ticket) {
+                ticket.classList.remove('urgency-ok','urgency-warm','urgency-hot','urgency-fire');
+                ticket.classList.add(mins > 20 ? 'urgency-fire' : mins > 15 ? 'urgency-hot' : mins > 8 ? 'urgency-warm' : 'urgency-ok');
+            }
         });
     }
 
@@ -579,7 +587,7 @@
 
     setInterval(checkNew, 3000);
     setInterval(tick, 1000);
-    setInterval(updateElapsed, 15000);
+    setInterval(updateElapsed, 60000); // cada minuto es suficiente
     updateElapsed();
     setTimeout(checkNew, 1500);
 
