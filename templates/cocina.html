@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cocina – Restaurante</title>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <style>
         :root {
@@ -39,7 +39,6 @@
             color: var(--text);
             font-family: 'Nunito', sans-serif;
             min-height: 100vh;
-            font-feature-settings: 'zero' 0; /* cero sin barra — evita confusión con 8 */
         }
 
         /* ── TOPBAR ──────────────────────────────── */
@@ -55,16 +54,14 @@
             height: 52px;
             display: flex; align-items: center; gap: 1.5rem;
         }
-        /* ── cero abierto en todos los elementos con JetBrains Mono ── */
         .topbar-brand, .stat strong, .refresh-pill,
         .order-badge, .mesa-num, .ticket-time,
         .item-qty, .ticket-pid {
-            font-feature-settings: 'zero' 0;
         }
 
         .topbar-brand {
             display: flex; align-items: center; gap: .5rem;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Nunito', sans-serif;
             font-size: .9rem; font-weight: 600;
             color: var(--text); text-decoration: none;
         }
@@ -85,8 +82,7 @@
         }
         .stat strong {
             font-size: 1rem; font-weight: 700;
-            color: var(--text); font-family: 'JetBrains Mono', monospace;
-            font-feature-settings: 'zero' 0;
+            color: var(--text); font-family: 'Nunito', sans-serif;
         }
 
         .topbar-right {
@@ -99,7 +95,7 @@
             border: 1px solid var(--border);
             border-radius: 20px;
             padding: .28rem .75rem;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Nunito', sans-serif;
             font-size: .75rem; color: var(--text3);
         }
         .refresh-pill .dot-live {
@@ -172,7 +168,7 @@
         }
         .order-badge {
             background: var(--black); color: var(--white);
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Nunito', sans-serif;
             font-size: .65rem; font-weight: 600;
             padding: .15rem .4rem; border-radius: 5px;
         }
@@ -180,14 +176,14 @@
             font-size: .75rem; font-weight: 500; color: var(--text3);
         }
         .mesa-num {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Nunito', sans-serif;
             font-size: 1.6rem; font-weight: 700;
             color: var(--text); line-height: 1;
         }
 
         .ticket-time {
             display: flex; align-items: center; gap: .3rem;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Nunito', sans-serif;
             font-size: .75rem; color: var(--text3);
         }
         .ticket-time svg { width: 13px; height: 13px; stroke: var(--text3); }
@@ -235,7 +231,7 @@
         .item-qty {
             width: 28px; height: 28px;
             background: var(--black); color: var(--white);
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Nunito', sans-serif;
             font-size: .8rem; font-weight: 600;
             display: flex; align-items: center; justify-content: center;
             border-radius: 6px; flex-shrink: 0;
@@ -254,7 +250,8 @@
         .item-nota {
             font-size: .78rem; font-weight: 500;
             color: var(--amber);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            white-space: normal;
+            line-height: 1.35;
         }
 
         /* ── BUTTONS ─────────────────────────────── */
@@ -296,7 +293,7 @@
         }
         .ticket-mesero svg { width: 12px; height: 12px; stroke: var(--text3); }
         .ticket-pid {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Nunito', sans-serif;
             font-size: .72rem; color: var(--text3);
         }
 
