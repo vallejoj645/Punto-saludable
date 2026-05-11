@@ -122,18 +122,17 @@
 
         /* ── BOARD ───────────────────────────────── */
         .board {
-            height: calc(100vh - 52px);
-            padding: .85rem 1rem;
+            padding: 1rem 1.25rem;
             display: grid;
-            /* grid-template-columns y rows los calcula fitBoard() en JS */
-            gap: .75rem;
-            overflow: hidden;
-            box-sizing: border-box;
+            /* columnas que se adaptan: mínimo 220px, máximo 1fr;
+               con muchos pedidos quedan más angostas, con pocos más anchas */
+            grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+            gap: .85rem;
+            align-items: start;
         }
 
         /* ── TICKET CARD ─────────────────────────── */
         .ticket {
-            min-height: 0;           /* permite que el grid comprima la tarjeta */
             width: 100%;
             background: var(--surface);
             border-radius: var(--radius-card);
@@ -194,8 +193,6 @@
         .ticket { container-type: inline-size; }
 
         .ticket-items {
-            flex: 1;          /* ocupa el espacio restante de la tarjeta */
-            overflow-y: auto; /* scroll interno solo si la tarjeta es muy pequeña */
             display: grid;
             grid-template-columns: 1fr;   /* 1 columna por defecto */
         }
@@ -327,9 +324,9 @@
 
         /* ── RESPONSIVE ──────────────────────────── */
         @media (max-width: 600px) {
-            /* en móvil el board sí puede scrollear verticalmente */
-            .board { height: auto; overflow-y: auto; }
-            .topbar-stats { gap: .6rem; }
+            .board { grid-template-columns: 1fr; padding: .75rem; }
+            .topbar-stats { gap: .75rem; }
+            .topbar-inner { gap: .75rem; }
         }
     </style>
 </head>
@@ -471,47 +468,6 @@
     let countdown = 3;
     let isChecking = false;
 
-    /* ── fitBoard: calcula filas/columnas para que todo quepa en pantalla ── */
-    function fitBoard() {
-        const board = document.getElementById('pedidos-grid');
-        if (!board) return;
-        const tickets = board.querySelectorAll('.ticket');
-        const n = tickets.length;
-        if (n === 0) return;
-
-        // Espacio disponible (clientWidth/Height ya descuenta padding del board)
-        const style = getComputedStyle(board);
-        const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-        const padY = parseFloat(style.paddingTop)  + parseFloat(style.paddingBottom);
-        const gap  = parseFloat(style.gap) || 12;
-        const W = board.clientWidth  - padX;
-        const H = board.clientHeight - padY;
-
-        // Busca la combinación cols×rows que maximiza el área de cada tarjeta
-        let bestCols = 1, bestArea = 0;
-        for (let cols = 1; cols <= n; cols++) {
-            const rows   = Math.ceil(n / cols);
-            const cardW  = (W - gap * (cols - 1)) / cols;
-            const cardH  = (H - gap * (rows - 1)) / rows;
-            if (cardW < 160) continue;   // ancho mínimo aceptable
-            const area = cardW * cardH;
-            if (area > bestArea) { bestArea = area; bestCols = cols; }
-        }
-        const bestRows = Math.ceil(n / bestCols);
-
-        board.style.gridTemplateColumns = `repeat(${bestCols}, 1fr)`;
-        board.style.gridTemplateRows    = `repeat(${bestRows}, 1fr)`;
-    }
-
-    // Re-calcular en resize (debounced)
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(fitBoard, 80);
-    });
-
-    fitBoard(); // primera vez al cargar
-
     /* ── Sonido ── */
     function createAlertSound() {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -629,7 +585,6 @@
                 if (el) document.getElementById(id).textContent = el.textContent;
             });
             updateElapsed();
-            fitBoard(); // recalcular layout con el nuevo número de tarjetas
         } catch(e) { showToast('Error al actualizar', 'error'); }
         finally { badge.classList.remove('updating'); }
     }
