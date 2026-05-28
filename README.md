@@ -41,3 +41,4 @@ Instrucciones rápidas para desplegar en Railway ✅
    - Para crear la tabla en la BD local puedes ejecutar: `python update_database.py` (o `python create_db.py` en caso de base vacía).
 
 ¡Listo! Si quieres, añado export CSV o filtros por periodo para los consumos.
+s
