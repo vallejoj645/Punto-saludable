@@ -200,8 +200,28 @@ class Factura(db.Model):
     fecha_pago_real = db.Column(db.DateTime, nullable=True)  # Cuándo pagó realmente
     saldo_pendiente = db.Column(db.Float, default=0)  # Si pagó parcialmente
     fecha_emision = db.Column(db.DateTime, default=ahora)
-    
+    turno_id = db.Column(db.Integer, db.ForeignKey('turno.id'), nullable=True)
+
     sesion = db.relationship('Sesion', backref='facturas')
+
+class Turno(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(50), nullable=False)  # 'Mañana', 'Tarde', 'Noche'
+    fecha_apertura = db.Column(db.DateTime, default=ahora, nullable=False)
+    fecha_cierre = db.Column(db.DateTime, nullable=True)
+    activo = db.Column(db.Boolean, default=True)
+    abierto_por_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    cerrado_por_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=True)
+    notas_cierre = db.Column(db.Text, nullable=True)
+
+    abierto_por = db.relationship('Usuario', foreign_keys=[abierto_por_id])
+    cerrado_por = db.relationship('Usuario', foreign_keys=[cerrado_por_id])
+    facturas = db.relationship('Factura', backref='turno', lazy='select')
+
+
+def get_turno_activo():
+    """Retorna el turno activo actual, o None si no hay ninguno."""
+    return Turno.query.filter_by(activo=True).first()
 
 # Modelo para configuración del restaurante (agregar con los otros modelos)
 class ConfiguracionRestaurante(db.Model):
@@ -698,6 +718,7 @@ def facturar_sesion(sesion_id):
         saldo_pendiente = total if estado_pago == 'pendiente' else 0
         
         # Crear factura (sin sesion_id porque es domicilio)
+        turno_activo = get_turno_activo()
         factura = Factura(
             numero_consecutivo=numero_consecutivo,
             sesion_id=sesion.id,  # ✅ ESTA SÍ es una sesión
@@ -708,7 +729,8 @@ def facturar_sesion(sesion_id):
             metodo_pago=metodo_pago,  # ✅ viene del formulario
             cliente_nombre=cliente_nombre,  # ✅ viene del formulario
             cliente_documento=cliente_documento,
-            notas=notas,       
+            notas=notas,
+            turno_id=turno_activo.id if turno_activo else None,
         )
         # Actualizar sesión
         sesion.total = total
@@ -773,21 +795,103 @@ def ver_factura(factura_id):
 def lista_facturas():
     """Listar todas las facturas"""
     fecha_param = request.args.get('fecha')
-    
+    turno_id_param = request.args.get('turno_id', type=int)
+
+    query = Factura.query
+
     if fecha_param:
         try:
             fecha_obj = datetime.strptime(fecha_param, '%Y-%m-%d').date()
-            facturas = Factura.query.filter(
-                db.func.date(Factura.fecha_emision) == fecha_obj
-            ).order_by(Factura.fecha_emision.desc()).all()
+            query = query.filter(db.func.date(Factura.fecha_emision) == fecha_obj)
         except ValueError:
             flash('Fecha inválida', 'error')
-            facturas = Factura.query.order_by(Factura.fecha_emision.desc()).limit(50).all()
-    else:
-        # Últimas 50 facturas
-        facturas = Factura.query.order_by(Factura.fecha_emision.desc()).limit(50).all()
-    
-    return render_template("lista_facturas.html", facturas=facturas)
+
+    if turno_id_param:
+        query = query.filter(Factura.turno_id == turno_id_param)
+
+    facturas = query.order_by(Factura.fecha_emision.desc()).limit(50).all()
+
+    # Para el dropdown de turnos en el filtro
+    turnos_disponibles = Turno.query.order_by(Turno.fecha_apertura.desc()).limit(30).all()
+
+    return render_template("lista_facturas.html", facturas=facturas, turnos_disponibles=turnos_disponibles)
+
+# ==========================================
+# RUTAS PARA TURNOS
+# ==========================================
+
+@app.route('/turnos')
+@login_required
+def lista_turnos():
+    turnos = Turno.query.order_by(Turno.fecha_apertura.desc()).limit(30).all()
+    turno_activo = get_turno_activo()
+    return render_template('turnos/lista_turnos.html', turnos=turnos, turno_activo=turno_activo)
+
+
+@app.route('/turno/abrir', methods=['POST'])
+@login_required
+def abrir_turno():
+    if current_user.rol != 'admin':
+        flash('Solo los administradores pueden abrir turnos.', 'error')
+        return redirect(url_for('lista_turnos'))
+
+    if get_turno_activo():
+        flash('Ya hay un turno activo. Ciérralo primero.', 'error')
+        return redirect(url_for('lista_turnos'))
+
+    nombre = request.form.get('nombre', 'Mañana')
+    turno = Turno(
+        nombre=nombre,
+        abierto_por_id=current_user.id,
+        activo=True
+    )
+    db.session.add(turno)
+    db.session.commit()
+    flash(f'Turno de {nombre} abierto exitosamente.', 'success')
+    return redirect(url_for('lista_turnos'))
+
+
+@app.route('/turno/<int:turno_id>/cerrar', methods=['POST'])
+@login_required
+def cerrar_turno(turno_id):
+    if current_user.rol != 'admin':
+        flash('Solo los administradores pueden cerrar turnos.', 'error')
+        return redirect(url_for('lista_turnos'))
+
+    turno = Turno.query.get_or_404(turno_id)
+    if not turno.activo:
+        flash('Este turno ya está cerrado.', 'error')
+        return redirect(url_for('ver_turno', turno_id=turno_id))
+
+    turno.activo = False
+    turno.fecha_cierre = ahora()
+    turno.cerrado_por_id = current_user.id
+    turno.notas_cierre = request.form.get('notas_cierre', '')
+    db.session.commit()
+    flash(f'Turno de {turno.nombre} cerrado. Ver reporte de cierre.', 'success')
+    return redirect(url_for('ver_turno', turno_id=turno_id))
+
+
+@app.route('/turno/<int:turno_id>')
+@login_required
+def ver_turno(turno_id):
+    turno = Turno.query.get_or_404(turno_id)
+    facturas = Factura.query.filter_by(turno_id=turno_id).order_by(Factura.fecha_emision).all()
+
+    total_facturado = sum(f.total for f in facturas)
+
+    # Desglose por método de pago
+    por_metodo = {}
+    for f in facturas:
+        metodo = f.metodo_pago or 'efectivo'
+        por_metodo[metodo] = por_metodo.get(metodo, 0) + f.total
+
+    return render_template('turnos/ver_turno.html',
+                           turno=turno,
+                           facturas=facturas,
+                           total_facturado=total_facturado,
+                           por_metodo=por_metodo)
+
 
 @app.route('/factura/manual/nueva', methods=['GET', 'POST'])
 @login_required
@@ -796,9 +900,9 @@ def nueva_factura_manual():
     if current_user.rol != 'admin':
         flash('Solo los administradores pueden crear facturas manuales.', 'error')
         return redirect(url_for('lista_facturas'))
-    
+
     config = ConfiguracionRestaurante.query.first()
-    
+
     if request.method == 'POST':
         fecha_str = request.form.get('fecha_emision', '')
         total_raw = request.form.get('total', 0, type=float)
@@ -806,21 +910,23 @@ def nueva_factura_manual():
         cliente_nombre = request.form.get('cliente_nombre', '').strip()
         notas = request.form.get('notas', '').strip()
         estado_pago = request.form.get('estado_pago', 'pagada')
-    
+
         if not fecha_str or total_raw <= 0:
             flash('La fecha y el total son obligatorios y el total debe ser mayor a 0.', 'error')
             return redirect(url_for('nueva_factura_manual'))
-    
+
         try:
             fecha_emision = datetime.strptime(fecha_str, '%Y-%m-%d')
         except ValueError:
             flash('Formato de fecha inválido.', 'error')
             return redirect(url_for('nueva_factura_manual'))
-    
+
+        # Número consecutivo
         ultima_factura = Factura.query.order_by(Factura.id.desc()).first()
         nuevo_num = (int(ultima_factura.numero_consecutivo.split('-')[1]) + 1) if ultima_factura else 1
         numero_consecutivo = f"FACT-{nuevo_num:06d}"
-    
+
+        turno_activo = get_turno_activo()
         factura = Factura(
             numero_consecutivo=numero_consecutivo,
             sesion_id=None,
@@ -835,18 +941,21 @@ def nueva_factura_manual():
             fecha_emision=fecha_emision,
             fecha_pago_real=fecha_emision if estado_pago == 'pagada' else None,
             saldo_pendiente=0 if estado_pago == 'pagada' else total_raw,
+            turno_id=turno_activo.id if turno_activo else None,
         )
         db.session.add(factura)
         db.session.commit()
-    
+
         flash(f'Factura {numero_consecutivo} creada exitosamente con fecha {fecha_emision.strftime("%d/%m/%Y")}.', 'success')
         return redirect(url_for('ver_factura', factura_id=factura.id))
-    
+
+    # Fecha por defecto: 29 de marzo del año actual
     from datetime import date as date_type
     hoy = ahora()
     fecha_default = date_type(hoy.year, 3, 29).isoformat()
-    
+
     return render_template('nueva_factura_manual.html', config=config, fecha_default=fecha_default)
+
 
 # ==========================================
 # RUTAS PARA CONSUMO INTERNO (ADMIN)
@@ -3324,6 +3433,7 @@ def facturar_domicilio(domicilio_id):
                 fecha_vencimiento = datetime.strptime(fecha_vencimiento_str, '%Y-%m-%d').date()
             
             # Crear factura (sin sesion_id porque es domicilio)
+            turno_activo = get_turno_activo()
             factura = Factura(
                 numero_consecutivo=numero_consecutivo,
                 sesion_id=None,  # NULL para domicilios
@@ -3338,7 +3448,8 @@ def facturar_domicilio(domicilio_id):
                 estado_pago=estado_pago,
                 fecha_vencimiento=fecha_vencimiento,
                 fecha_pago_real=ahora() if estado_pago == 'pagada' else None,
-                saldo_pendiente=total if estado_pago == 'pendiente' else 0
+                saldo_pendiente=total if estado_pago == 'pendiente' else 0,
+                turno_id=turno_activo.id if turno_activo else None,
             )
             
             db.session.add(factura)
@@ -3663,6 +3774,20 @@ else:
                         print("✅ Columna nombre_personalizado agregada")
             except Exception as e:
                 print(f"Error en migración de mesa: {e}")
+
+            # Migración: agregar turno_id a factura si no existe
+            try:
+                with db.engine.connect() as conn:
+                    result = conn.execute(text("""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_name='factura' AND column_name='turno_id'
+                    """))
+                    if not result.fetchone():
+                        conn.execute(text("ALTER TABLE factura ADD COLUMN turno_id INTEGER REFERENCES turno(id)"))
+                        conn.commit()
+                        print("✅ Columna turno_id agregada a factura")
+            except Exception as e:
+                print(f"Error en migración turno_id: {e}")
 
             # Crear admin si no existe
             if not Usuario.query.filter_by(username='admin').first():
