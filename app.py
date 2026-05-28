@@ -789,64 +789,64 @@ def lista_facturas():
     
     return render_template("lista_facturas.html", facturas=facturas)
 
-    @app.route('/factura/manual/nueva', methods=['GET', 'POST'])
-    @login_required
-    def nueva_factura_manual():
-        """Crear factura manual / histórica sin sesión ni domicilio."""
-        if current_user.rol != 'admin':
-            flash('Solo los administradores pueden crear facturas manuales.', 'error')
-            return redirect(url_for('lista_facturas'))
+@app.route('/factura/manual/nueva', methods=['GET', 'POST'])
+@login_required
+def nueva_factura_manual():
+    """Crear factura manual / histórica sin sesión ni domicilio."""
+    if current_user.rol != 'admin':
+        flash('Solo los administradores pueden crear facturas manuales.', 'error')
+        return redirect(url_for('lista_facturas'))
     
-        config = ConfiguracionRestaurante.query.first()
+    config = ConfiguracionRestaurante.query.first()
     
-        if request.method == 'POST':
-            fecha_str = request.form.get('fecha_emision', '')
-            total_raw = request.form.get('total', 0, type=float)
-            metodo_pago = request.form.get('metodo_pago', 'efectivo')
-            cliente_nombre = request.form.get('cliente_nombre', '').strip()
-            notas = request.form.get('notas', '').strip()
-            estado_pago = request.form.get('estado_pago', 'pagada')
+    if request.method == 'POST':
+        fecha_str = request.form.get('fecha_emision', '')
+        total_raw = request.form.get('total', 0, type=float)
+        metodo_pago = request.form.get('metodo_pago', 'efectivo')
+        cliente_nombre = request.form.get('cliente_nombre', '').strip()
+        notas = request.form.get('notas', '').strip()
+        estado_pago = request.form.get('estado_pago', 'pagada')
     
-            if not fecha_str or total_raw <= 0:
-                flash('La fecha y el total son obligatorios y el total debe ser mayor a 0.', 'error')
-                return redirect(url_for('nueva_factura_manual'))
+        if not fecha_str or total_raw <= 0:
+            flash('La fecha y el total son obligatorios y el total debe ser mayor a 0.', 'error')
+            return redirect(url_for('nueva_factura_manual'))
     
-            try:
-                fecha_emision = datetime.strptime(fecha_str, '%Y-%m-%d')
-            except ValueError:
-                flash('Formato de fecha inválido.', 'error')
-                return redirect(url_for('nueva_factura_manual'))
+        try:
+            fecha_emision = datetime.strptime(fecha_str, '%Y-%m-%d')
+        except ValueError:
+            flash('Formato de fecha inválido.', 'error')
+            return redirect(url_for('nueva_factura_manual'))
     
-            ultima_factura = Factura.query.order_by(Factura.id.desc()).first()
-            nuevo_num = (int(ultima_factura.numero_consecutivo.split('-')[1]) + 1) if ultima_factura else 1
-            numero_consecutivo = f"FACT-{nuevo_num:06d}"
+        ultima_factura = Factura.query.order_by(Factura.id.desc()).first()
+        nuevo_num = (int(ultima_factura.numero_consecutivo.split('-')[1]) + 1) if ultima_factura else 1
+        numero_consecutivo = f"FACT-{nuevo_num:06d}"
     
-            factura = Factura(
-                numero_consecutivo=numero_consecutivo,
-                sesion_id=None,
-                subtotal=total_raw,
-                iva=0,
-                propina=0,
-                total=total_raw,
-                metodo_pago=metodo_pago,
-                cliente_nombre=cliente_nombre or 'Ingreso histórico',
-                notas=notas,
-                estado_pago=estado_pago,
-                fecha_emision=fecha_emision,
-                fecha_pago_real=fecha_emision if estado_pago == 'pagada' else None,
-                saldo_pendiente=0 if estado_pago == 'pagada' else total_raw,
-            )
-            db.session.add(factura)
-            db.session.commit()
+        factura = Factura(
+            numero_consecutivo=numero_consecutivo,
+            sesion_id=None,
+            subtotal=total_raw,
+            iva=0,
+            propina=0,
+            total=total_raw,
+            metodo_pago=metodo_pago,
+            cliente_nombre=cliente_nombre or 'Ingreso histórico',
+            notas=notas,
+            estado_pago=estado_pago,
+            fecha_emision=fecha_emision,
+            fecha_pago_real=fecha_emision if estado_pago == 'pagada' else None,
+            saldo_pendiente=0 if estado_pago == 'pagada' else total_raw,
+        )
+        db.session.add(factura)
+        db.session.commit()
     
-            flash(f'Factura {numero_consecutivo} creada exitosamente con fecha {fecha_emision.strftime("%d/%m/%Y")}.', 'success')
-            return redirect(url_for('ver_factura', factura_id=factura.id))
+        flash(f'Factura {numero_consecutivo} creada exitosamente con fecha {fecha_emision.strftime("%d/%m/%Y")}.', 'success')
+        return redirect(url_for('ver_factura', factura_id=factura.id))
     
-        from datetime import date as date_type
-        hoy = ahora()
-        fecha_default = date_type(hoy.year, 3, 29).isoformat()
+    from datetime import date as date_type
+    hoy = ahora()
+    fecha_default = date_type(hoy.year, 3, 29).isoformat()
     
-        return render_template('nueva_factura_manual.html', config=config, fecha_default=fecha_default)
+    return render_template('nueva_factura_manual.html', config=config, fecha_default=fecha_default)
 
 # ==========================================
 # RUTAS PARA CONSUMO INTERNO (ADMIN)
