@@ -84,17 +84,19 @@
                             <!-- Tipo: Mesa o Domicilio -->
                             {% if factura.sesion %}
                                 <p class="mb-1">
-                                    <i class="fas fa-table"></i> 
+                                    <i class="fas fa-table"></i>
                                     <strong>Mesa {{ factura.sesion.mesa.numero }}</strong>
+                                </p>
+                            {% elif factura.domicilios %}
+                                <p class="mb-1">
+                                    <i class="fas fa-motorcycle"></i>
+                                    <strong>Domicilio</strong>
+                                    #{{ factura.domicilios[0].id }}
                                 </p>
                             {% else %}
                                 <p class="mb-1">
-                                    <i class="fas fa-motorcycle"></i> 
-                                    <strong>Domicilio</strong>
-                                    {% set domicilio = factura.domicilios[0] if factura.domicilios else None %}
-                                    {% if domicilio %}
-                                        #{{ domicilio.id }}
-                                    {% endif %}
+                                    <i class="fas fa-file-alt"></i>
+                                    <strong>Factura Manual</strong>
                                 </p>
                             {% endif %}
                         </div>
