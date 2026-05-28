@@ -22,12 +22,12 @@
     <div class="card mb-4">
         <div class="card-body">
             <form method="get" class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">Fecha</label>
-                    <input type="date" name="fecha" class="form-control" 
+                    <input type="date" name="fecha" class="form-control"
                            value="{{ request.args.get('fecha', '') }}">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">Estado de Pago</label>
                     <select name="estado_pago" class="form-select">
                         <option value="">Todas</option>
@@ -42,7 +42,20 @@
                         </option>
                     </select>
                 </div>
-                <div class="col-md-4 d-flex align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Turno</label>
+                    <select name="turno_id" class="form-select">
+                        <option value="">Todos los turnos</option>
+                        {% for turno in turnos_disponibles %}
+                        <option value="{{ turno.id }}"
+                            {% if request.args.get('turno_id', type=int) == turno.id %}selected{% endif %}>
+                            Turno {{ turno.nombre }} — {{ turno.fecha_apertura.strftime('%d/%m/%Y') }}
+                            {% if turno.activo %}(activo){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary me-2">
                         <i class="fas fa-filter"></i> Filtrar
                     </button>
