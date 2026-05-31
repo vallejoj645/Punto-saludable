@@ -19,9 +19,7 @@
                 <a href="{{ url_for('cocina') }}" class="nav-link">Cocina</a>
                 {% endif %}
                 <a href="{{ url_for('historial') }}" class="nav-link">Historial</a>
-                {% if current_user.rol == 'admin' %}
-                <a href="{{ url_for('lista_turnos') }}" class="nav-link">Turnos</a>
-                {% endif %}
+                <a href="{{ url_for('lista_turnos') }}" class="nav-link">🕐 Turnos</a>
                 <span class="nav-user">👤 {{ current_user.nombre }}</span>
                 <a href="{{ url_for('logout') }}" class="nav-link nav-logout">Salir</a>
             </div>
