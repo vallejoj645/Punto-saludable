@@ -1136,69 +1136,51 @@ def editar_factura(factura_id):
 @app.route('/factura/<int:factura_id>/eliminar', methods=['POST'])
 @login_required
 def eliminar_factura(factura_id):
-    """
-    RAZÓN: Eliminar facturas y revertir los cambios asociados.
-    Funciona tanto para facturas de sesiones como de domicilios.
-    Al eliminar, la factura desaparece de los reportes de ingresos automáticamente.
-    """
     factura = Factura.query.get_or_404(factura_id)
-    
-    # Solo admin puede eliminar facturas
+
     if getattr(current_user, 'rol', None) != 'admin':
         flash('No tienes permisos para eliminar facturas', 'error')
         return redirect(url_for('ver_factura', factura_id=factura_id))
 
     numero_factura = factura.numero_consecutivo
     monto = factura.total
-    
+
     try:
-        # ============================================
-        # CASO 1: FACTURA DE SESIÓN (MESA)
-        # ============================================
+        # 1. Desvincular TODOS los domicilios que referencian esta factura
+        #    (debe hacerse ANTES del delete para no violar FK)
+        Domicilio.query.filter_by(factura_id=factura_id).update(
+            {'factura_id': None, 'pagado': False},
+            synchronize_session=False
+        )
+
+        # 2. Si es factura de mesa, reactivar sesión y revertir pedidos
         if factura.sesion_id:
             sesion = factura.sesion
             if sesion:
-                # Reactivar la sesión
                 sesion.activa = True
                 sesion.fecha_fin = None
                 sesion.total = 0
-                
-                # Revertir estado de los pedidos
                 db.session.query(Pedido).filter(
                     Pedido.sesion_id == sesion.id
-                ).update({
-                    "pagado": False,
-                    "estado": "pendiente"
-                }, synchronize_session=False)
-        
-        # ============================================
-        # CASO 2: FACTURA DE DOMICILIO
-        # ============================================
-        else:
-            # Buscar domicilio asociado a esta factura
-            domicilio = Domicilio.query.filter_by(factura_id=factura_id).first()
-            if domicilio:
-                # Desasociar la factura del domicilio
-                domicilio.factura_id = None
-                domicilio.pagado = False
-                # El domicilio queda en su estado actual (entregado)
-                # pero sin factura asociada, permitiendo re-facturar
-        
-        # ============================================
-        # ELIMINAR LA FACTURA
-        # ============================================
+                ).update(
+                    {'pagado': False, 'estado': 'pendiente'},
+                    synchronize_session=False
+                )
+
+        # 3. Flush para aplicar los UPDATEs antes del DELETE en la misma transacción
+        db.session.flush()
+
+        # 4. Eliminar la factura de la base de datos
         db.session.delete(factura)
         db.session.commit()
-        
-        flash(f'✓ Factura {numero_factura} eliminada exitosamente (${monto:,.0f})', 'success')
-        flash('La factura ha sido eliminada de los reportes de ingresos', 'info')
-        
+
+        flash(f'Factura {numero_factura} eliminada (${monto:,.0f})', 'success')
+
     except Exception as e:
         db.session.rollback()
-        flash(f'❌ Error al eliminar la factura: {str(e)}', 'error')
+        flash(f'Error al eliminar la factura: {str(e)}', 'error')
         return redirect(url_for('ver_factura', factura_id=factura_id))
-    
-    # Redirigir a la lista de facturas
+
     return redirect(url_for('lista_facturas'))
 
 # ==========================================
