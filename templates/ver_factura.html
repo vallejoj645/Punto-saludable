@@ -255,7 +255,8 @@
     {% endif %}
     <div class="mb-2">
         <table class="tabla-items">
-            <thead><tr><th class="text-left">ITEM</th><th class="text-center">CANT</th><th class="text-right">VALOR</th></tr></thead>
+            <colgroup><col class="col-item"><col class="col-cant"><col class="col-precio"></colgroup>
+            <thead><tr><th>ITEM</th><th class="text-center">U</th><th class="text-right">$</th></tr></thead>
             <tbody>
                 {% if factura.sesion %}
                     {% for pedido in factura.sesion.pedidos %}
@@ -325,25 +326,89 @@
 {% endif %}
 
 <style>
+@page {
+    size: 58mm auto;
+    margin: 0;
+}
 @media print {
-    body { margin: 0; padding: 0; }
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 58mm !important;
+        background: #fff !important;
+    }
     /* Ocultar todo excepto el recibo térmico */
-    .navbar, .d-print-none, .modal, header, nav { display: none !important; }
-    .factura-termica { display: block !important; width: 80mm; margin: 0; padding: 2mm; box-shadow: none; font-size: 11px; font-family: 'Courier New', monospace; }
-    * { color: #000 !important; background: #fff !important; }
-    h3 { font-size: 14px; margin: 2px 0; }
-    h4 { font-size: 13px; margin: 2px 0; }
-    p, td, th { font-size: 11px; margin: 1px 0; }
-    .separador { border-top: 1px dashed #000; margin: 4px 0; }
-    .separador-doble { border-top: 2px solid #000; margin: 4px 0; }
-    .total-final { border-top: 1px solid #000; border-bottom: 1px solid #000; }
-    .corte { height: 20mm; }
-    .tabla-items { width: 100%; font-size: 11px; }
-    .tabla-items th { border-bottom: 1px solid #000; padding: 4px 2px; }
-    .tabla-items td { padding: 4px 2px; vertical-align: top; }
-    .tabla-totales { width: 100%; font-size: 12px; }
-    .tabla-totales td { padding: 4px 2px; }
-    .total-final { font-size: 14px; }
+    .navbar, .d-print-none, .modal, header, nav,
+    .container, .row, .col-lg-8 { display: none !important; }
+
+    /* Recibo térmico 58mm */
+    .factura-termica {
+        display: block !important;
+        width: 54mm !important;
+        max-width: 54mm !important;
+        margin: 0 auto !important;
+        padding: 1mm 0 !important;
+        box-shadow: none !important;
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 9px !important;
+        line-height: 1.25 !important;
+        color: #000 !important;
+        background: #fff !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+    }
+    * { color: #000 !important; background: #fff !important; box-shadow: none !important; }
+
+    /* Encabezado */
+    .factura-termica h3 { font-size: 11px !important; font-weight: bold; margin: 1px 0 2px; text-align: center; }
+    .factura-termica h4 { font-size: 10px !important; font-weight: bold; margin: 1px 0; text-align: center; }
+    .factura-termica p  { font-size: 9px !important; margin: 0 0 1px; }
+    .factura-termica small { font-size: 8px !important; }
+
+    /* Separadores */
+    .separador       { border-top: 1px dashed #000 !important; margin: 3px 0 !important; }
+    .separador-doble { border-top: 2px solid #000 !important;  margin: 3px 0 !important; }
+
+    /* Tabla de ítems */
+    .tabla-items {
+        width: 100% !important;
+        font-size: 9px !important;
+        border-collapse: collapse !important;
+        table-layout: fixed !important;
+    }
+    .tabla-items col.col-item   { width: 55% !important; }
+    .tabla-items col.col-cant   { width: 15% !important; }
+    .tabla-items col.col-precio { width: 30% !important; }
+    .tabla-items th {
+        font-size: 8px !important;
+        font-weight: bold !important;
+        border-bottom: 1px solid #000 !important;
+        padding: 2px 1px !important;
+        text-align: left !important;
+    }
+    .tabla-items th.text-right,
+    .tabla-items td.text-right { text-align: right !important; }
+    .tabla-items th.text-center,
+    .tabla-items td.text-center { text-align: center !important; }
+    .tabla-items td {
+        padding: 2px 1px !important;
+        vertical-align: top !important;
+        word-break: break-word !important;
+        font-size: 9px !important;
+    }
+
+    /* Tabla de totales */
+    .tabla-totales { width: 100% !important; font-size: 9px !important; }
+    .tabla-totales td { padding: 1px 1px !important; }
+    .total-final {
+        border-top: 1px solid #000 !important;
+        border-bottom: 1px solid #000 !important;
+        font-size: 11px !important;
+        font-weight: bold !important;
+    }
+
+    /* Espacio de corte */
+    .corte { height: 15mm !important; }
 }
 </style>
 {% endblock %}
