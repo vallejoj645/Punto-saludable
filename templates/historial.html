@@ -171,7 +171,7 @@
                 <div class="sesion-card {% if sesion.activa %}activa{% elif sesion.facturas %}facturada{% endif %}">
                     <div class="sesion-header">
                         <div class="sesion-info">
-                            <h3>🪑 Mesa {{ sesion.mesa.numero }}</h3>
+                            <h3>🪑 {{ sesion.mesa.display_name }}</h3>
                             <div class="sesion-meta">
                                 ⏰ Inicio: {{ sesion.fecha_inicio.strftime('%H:%M') }}
                                 {% if not sesion.activa and sesion.fecha_fin %}

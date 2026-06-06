@@ -98,7 +98,7 @@
                             {% if factura.sesion %}
                                 <p class="mb-1">
                                     <i class="fas fa-table"></i>
-                                    <strong>Mesa {{ factura.sesion.mesa.numero }}</strong>
+                                    <strong>{{ factura.sesion.mesa.display_name }}</strong>
                                 </p>
                             {% elif factura.domicilios %}
                                 <p class="mb-1">

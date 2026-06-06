@@ -396,7 +396,7 @@
                 <span class="order-badge">#{{ loop.index }}</span>
                 <div>
                     <div class="mesa-label">Mesa</div>
-                    <div class="mesa-num">{{ grupo.mesa.numero }}</div>
+                    <div class="mesa-num">{{ grupo.mesa.display_name }}</div>
                 </div>
             </div>
             <span class="ticket-time {% if minutos > 15 %}fire{% elif minutos > 8 %}warn{% endif %}"

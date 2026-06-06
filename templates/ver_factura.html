@@ -78,7 +78,7 @@
                         <div class="col-md-6">
                             <p class="text-muted small mb-1">TIPO</p>
                             {% if factura.sesion %}
-                            <p class="fw-bold mb-0"><i class="fas fa-chair text-primary"></i> Mesa {{ factura.sesion.mesa.numero }}</p>
+                            <p class="fw-bold mb-0"><i class="fas fa-chair text-primary"></i> {{ factura.sesion.mesa.display_name }}</p>
                             {% elif factura.domicilios.first() %}
                             <p class="fw-bold mb-0"><i class="fas fa-motorcycle text-primary"></i> Domicilio #{{ factura.domicilios.first().id }}</p>
                             {% else %}
@@ -241,7 +241,7 @@
         <h4 class="mb-1">FACTURA DE VENTA</h4>
         <p class="mb-0"><strong>No. {{ factura.numero_consecutivo }}</strong></p>
         <p class="mb-0 small">{{ factura.fecha_emision.strftime('%d/%m/%Y %I:%M %p') }}</p>
-        {% if factura.sesion %}<p class="mb-0 small">Mesa: {{ factura.sesion.mesa.numero }}</p>
+        {% if factura.sesion %}<p class="mb-0 small">{{ factura.sesion.mesa.display_name }}</p>
         {% elif factura.domicilios.first() %}<p class="mb-0 small">DOMICILIO</p>
         {% else %}<p class="mb-0 small">FACTURA MANUAL</p>{% endif %}
     </div>

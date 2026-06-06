@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facturar Sesión - Mesa {{ sesion.mesa.numero }}</title>
+    <title>Facturar Sesión - {{ sesion.mesa.display_name }}</title>
     <style>
         * { 
             margin: 0; 
@@ -276,7 +276,7 @@
 <body>
     <div class="container">
         <h1>💳 Facturar Sesión</h1>
-        <p class="subtitle">Mesa {{ sesion.mesa.numero }} - Sesión iniciada: {{ sesion.fecha_inicio.strftime('%d/%m/%Y %H:%M') }}</p>
+        <p class="subtitle">{{ sesion.mesa.display_name }} - Sesión iniciada: {{ sesion.fecha_inicio.strftime('%d/%m/%Y %H:%M') }}</p>
         
         {% if not sesion.pedidos %}
         <div class="alert alert-warning">
@@ -288,7 +288,7 @@
         <div class="info-box">
             <div class="info-row">
                 <span class="label">Mesa:</span>
-                <span class="value">Mesa {{ sesion.mesa.numero }}</span>
+                <span class="value">{{ sesion.mesa.display_name }}</span>
             </div>
             <div class="info-row">
                 <span class="label">Duración:</span>
