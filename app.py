@@ -790,6 +790,28 @@ def ver_factura(factura_id):
                          config=config,
                          desglose=desglose)
 
+@app.route("/factura/<int:factura_id>/print")
+@login_required
+def print_factura(factura_id):
+    """Vista de impresión móvil — solo el recibo térmico, sin Bootstrap"""
+    factura = Factura.query.get_or_404(factura_id)
+    config = ConfiguracionRestaurante.query.first()
+    if not config:
+        config = ConfiguracionRestaurante()
+        db.session.add(config)
+        db.session.commit()
+    desglose = None
+    if factura.desglose_pago:
+        try:
+            desglose = json.loads(factura.desglose_pago)
+        except:
+            desglose = None
+    return render_template("print_factura.html",
+                           factura=factura,
+                           config=config,
+                           desglose=desglose)
+
+
 @app.route("/facturas")
 @login_required
 def lista_facturas():
