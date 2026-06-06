@@ -180,7 +180,7 @@
                             </td>
                             <td>
                                 {% if factura.sesion %}
-                                <span class="badge bg-primary"><i class="fas fa-table me-1"></i>Mesa {{ factura.sesion.mesa.numero }}</span>
+                                <span class="badge bg-primary"><i class="fas fa-table me-1"></i>{{ factura.sesion.mesa.display_name }}</span>
                                 {% elif factura.domicilios %}
                                 <span class="badge bg-warning text-dark"><i class="fas fa-motorcycle me-1"></i>Domicilio</span>
                                 {% else %}
