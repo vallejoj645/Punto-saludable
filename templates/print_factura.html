@@ -2,123 +2,187 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Factura {{ factura.numero_consecutivo }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         html, body {
             width: 100%;
             background: #fff;
             color: #000;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 13px;
-            line-height: 1.4;
+            font-size: 28px;
+            line-height: 1.5;
         }
+
         .recibo {
             width: 100%;
-            max-width: 100%;
-            padding: 4px 6px;
+            padding: 6px 8px;
         }
-        .centro { text-align: center; }
-        .derecha { text-align: right; }
-        .negrita { font-weight: bold; }
-        .grande { font-size: 15px; font-weight: bold; }
-        .pequeno { font-size: 11px; }
+
+        .centro   { text-align: center; }
+        .derecha  { text-align: right; }
+        .izquierda{ text-align: left; }
+        .negrita  { font-weight: bold; }
+
+        .nombre-empresa {
+            font-size: 34px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .info-empresa {
+            font-size: 24px;
+            text-align: center;
+            margin: 2px 0;
+        }
+
+        .titulo-factura {
+            font-size: 30px;
+            font-weight: bold;
+            text-align: center;
+            margin: 4px 0;
+        }
+
+        .numero-factura {
+            font-size: 32px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .fecha-factura {
+            font-size: 24px;
+            text-align: center;
+        }
+
         .sep {
             border: none;
-            border-top: 1px dashed #000;
-            margin: 5px 0;
+            border-top: 2px dashed #000;
+            margin: 8px 0;
         }
+
         .sep-doble {
             border: none;
-            border-top: 2px solid #000;
-            margin: 5px 0;
+            border-top: 3px solid #000;
+            margin: 8px 0;
         }
-        table { width: 100%; border-collapse: collapse; }
-        table th {
-            font-size: 11px;
+
+        /* Tabla de items */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 26px;
+        }
+
+        thead th {
+            font-size: 24px;
             font-weight: bold;
-            border-bottom: 1px solid #000;
-            padding: 2px 1px;
+            border-bottom: 2px solid #000;
+            padding: 4px 2px;
             text-align: left;
         }
-        table td { padding: 2px 1px; vertical-align: top; word-break: break-word; font-size: 12px; }
-        .col-item   { width: 55%; }
-        .col-cant   { width: 15%; text-align: center; }
-        .col-precio { width: 30%; text-align: right; }
-        .th-cant, .td-cant { text-align: center; }
-        .th-precio, .td-precio { text-align: right; }
-        .total-row td {
-            font-size: 14px;
-            font-weight: bold;
-            border-top: 1px solid #000;
-            border-bottom: 1px solid #000;
-            padding: 3px 1px;
+
+        tbody td {
+            padding: 5px 2px;
+            vertical-align: top;
+            word-break: break-word;
         }
-        .corte { height: 20mm; }
+
+        .col-item   { width: 54%; }
+        .col-cant   { width: 14%; text-align: center; }
+        .col-precio { width: 32%; text-align: right; }
+
+        /* Fila de total */
+        .total-row td {
+            font-size: 32px;
+            font-weight: bold;
+            border-top: 3px solid #000;
+            border-bottom: 3px solid #000;
+            padding: 6px 2px;
+        }
+
+        .subtotal-row td {
+            font-size: 26px;
+            padding: 3px 2px;
+        }
+
+        .pago-info {
+            font-size: 26px;
+            margin: 3px 0;
+        }
+
+        .pagado-badge {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .gracias {
+            font-size: 26px;
+            text-align: center;
+            margin: 4px 0;
+        }
+
+        .corte { height: 30mm; }
+
+        /* Botón solo en pantalla, oculto al imprimir */
         .btn-imprimir {
             display: block;
-            width: 90%;
-            margin: 10px auto;
-            padding: 12px;
-            font-size: 16px;
+            width: 92%;
+            margin: 12px auto;
+            padding: 16px;
+            font-size: 22px;
             background: #198754;
             color: #fff;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
+            font-family: Arial, sans-serif;
         }
+
         @media print {
-            .btn-imprimir { display: none; }
-            html, body { font-size: 11px; }
-            table td, table th { font-size: 10px; }
-            .total-row td { font-size: 12px; }
+            .btn-imprimir { display: none !important; }
         }
     </style>
 </head>
 <body>
 
-<button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir</button>
+<button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir Factura</button>
 
 <div class="recibo">
 
-    <!-- Encabezado -->
-    <div class="centro">
-        <div class="grande">{{ config.nombre }}</div>
-        <div class="pequeno">NIT: {{ config.nit }}</div>
-        <div class="pequeno">{{ config.direccion }}</div>
-        <div class="pequeno">{{ config.ciudad }}</div>
-        <div class="pequeno">Tel: {{ config.telefono }}</div>
-        {% if config.email %}<div class="pequeno">{{ config.email }}</div>{% endif %}
-        <div class="pequeno">{{ config.regimen }}</div>
-    </div>
+    <!-- ENCABEZADO -->
+    <div class="nombre-empresa">{{ config.nombre }}</div>
+    <div class="info-empresa">NIT: {{ config.nit }}</div>
+    <div class="info-empresa">{{ config.direccion }}</div>
+    <div class="info-empresa">{{ config.ciudad }}</div>
+    <div class="info-empresa">Tel: {{ config.telefono }}</div>
+    {% if config.email %}<div class="info-empresa">{{ config.email }}</div>{% endif %}
+    <div class="info-empresa">{{ config.regimen }}</div>
 
     <hr class="sep">
 
-    <div class="centro">
-        <div class="negrita">FACTURA DE VENTA</div>
-        <div class="negrita">No. {{ factura.numero_consecutivo }}</div>
-        <div class="pequeno">{{ factura.fecha_emision.strftime('%d/%m/%Y %I:%M %p') }}</div>
-        {% if factura.sesion %}
-        <div class="pequeno">{{ factura.sesion.mesa.display_name }}</div>
-        {% elif factura.domicilios.first() %}
-        <div class="pequeno">DOMICILIO</div>
-        {% else %}
-        <div class="pequeno">FACTURA MANUAL</div>
-        {% endif %}
-    </div>
+    <div class="titulo-factura">FACTURA DE VENTA</div>
+    <div class="numero-factura">No. {{ factura.numero_consecutivo }}</div>
+    <div class="fecha-factura">{{ factura.fecha_emision.strftime('%d/%m/%Y %I:%M %p') }}</div>
+    {% if factura.sesion %}
+    <div class="fecha-factura negrita">{{ factura.sesion.mesa.display_name }}</div>
+    {% elif factura.domicilios.first() %}
+    <div class="fecha-factura negrita">DOMICILIO</div>
+    {% else %}
+    <div class="fecha-factura negrita">FACTURA MANUAL</div>
+    {% endif %}
 
     <hr class="sep">
 
     {% if factura.cliente_nombre %}
-    <div>
-        <div class="pequeno"><span class="negrita">CLIENTE:</span> {{ factura.cliente_nombre }}</div>
-        {% if factura.cliente_documento %}<div class="pequeno">CC/NIT: {{ factura.cliente_documento }}</div>{% endif %}
-    </div>
+    <div class="pago-info"><span class="negrita">CLIENTE:</span> {{ factura.cliente_nombre }}</div>
+    {% if factura.cliente_documento %}<div class="pago-info">CC/NIT: {{ factura.cliente_documento }}</div>{% endif %}
     <hr class="sep">
     {% endif %}
 
-    <!-- Items -->
+    <!-- TABLA DE ÍTEMS -->
     <table>
         <colgroup>
             <col class="col-item">
@@ -128,17 +192,17 @@
         <thead>
             <tr>
                 <th>PRODUCTO</th>
-                <th class="th-cant">UND</th>
-                <th class="th-precio">$</th>
+                <th style="text-align:center;">UND</th>
+                <th style="text-align:right;">VALOR</th>
             </tr>
         </thead>
         <tbody>
             {% if factura.sesion %}
                 {% for pedido in factura.sesion.pedidos %}
                 <tr>
-                    <td>{{ pedido.producto }}{% if pedido.notas %}<br><span class="pequeno">{{ pedido.notas }}</span>{% endif %}</td>
-                    <td class="td-cant">{{ pedido.cantidad }}</td>
-                    <td class="td-precio">${{ "{:,.0f}".format(pedido.total) }}</td>
+                    <td>{{ pedido.producto }}{% if pedido.notas %}<br><small>{{ pedido.notas }}</small>{% endif %}</td>
+                    <td style="text-align:center;">{{ pedido.cantidad }}</td>
+                    <td style="text-align:right;">${{ "{:,.0f}".format(pedido.total) }}</td>
                 </tr>
                 {% endfor %}
             {% else %}
@@ -147,14 +211,14 @@
                     {% for item in domicilio.items %}
                     <tr>
                         <td>{{ item.producto_nombre }}</td>
-                        <td class="td-cant">{{ item.cantidad }}</td>
-                        <td class="td-precio">${{ "{:,.0f}".format(item.subtotal) }}</td>
+                        <td style="text-align:center;">{{ item.cantidad }}</td>
+                        <td style="text-align:right;">${{ "{:,.0f}".format(item.subtotal) }}</td>
                     </tr>
                     {% endfor %}
                     <tr>
                         <td>Domicilio</td>
-                        <td class="td-cant">1</td>
-                        <td class="td-precio">${{ "{:,.0f}".format(domicilio.costo_domicilio) }}</td>
+                        <td style="text-align:center;">1</td>
+                        <td style="text-align:right;">${{ "{:,.0f}".format(domicilio.costo_domicilio) }}</td>
                     </tr>
                 {% else %}
                 <tr><td colspan="3">{{ factura.notas or 'Ingreso global' }}</td></tr>
@@ -165,38 +229,34 @@
 
     <hr class="sep">
 
-    <!-- Totales -->
+    <!-- TOTALES -->
     <table>
         {% if factura.propina and factura.propina > 0 %}
-        <tr>
+        <tr class="subtotal-row">
             <td>Propina:</td>
-            <td class="td-precio">${{ "{:,.0f}".format(factura.propina) }}</td>
+            <td style="text-align:right;">${{ "{:,.0f}".format(factura.propina) }}</td>
         </tr>
         {% endif %}
         {% if desglose %}
-        {% if desglose.efectivo %}<tr><td class="pequeno">Efectivo:</td><td class="td-precio pequeno">${{ "{:,.0f}".format(desglose.efectivo) }}</td></tr>{% endif %}
-        {% if desglose.tarjeta %}<tr><td class="pequeno">Tarjeta:</td><td class="td-precio pequeno">${{ "{:,.0f}".format(desglose.tarjeta) }}</td></tr>{% endif %}
-        {% if desglose.transferencia %}<tr><td class="pequeno">Transferencia:</td><td class="td-precio pequeno">${{ "{:,.0f}".format(desglose.transferencia) }}</td></tr>{% endif %}
+            {% if desglose.efectivo %}<tr class="subtotal-row"><td>Efectivo:</td><td style="text-align:right;">${{ "{:,.0f}".format(desglose.efectivo) }}</td></tr>{% endif %}
+            {% if desglose.tarjeta %}<tr class="subtotal-row"><td>Tarjeta:</td><td style="text-align:right;">${{ "{:,.0f}".format(desglose.tarjeta) }}</td></tr>{% endif %}
+            {% if desglose.transferencia %}<tr class="subtotal-row"><td>Transferencia:</td><td style="text-align:right;">${{ "{:,.0f}".format(desglose.transferencia) }}</td></tr>{% endif %}
         {% endif %}
         <tr class="total-row">
             <td>TOTAL:</td>
-            <td class="td-precio">${{ "{:,.0f}".format(factura.total) }}</td>
+            <td style="text-align:right;">${{ "{:,.0f}".format(factura.total) }}</td>
         </tr>
     </table>
 
     <hr class="sep">
 
-    <div>
-        <div class="pequeno"><span class="negrita">PAGO:</span> {{ factura.metodo_pago|upper if factura.metodo_pago else 'EFECTIVO' }}</div>
-        {% if factura.estado_pago == 'pagada' %}<div class="pequeno negrita">✓ PAGADO</div>{% endif %}
-    </div>
+    <div class="pago-info"><span class="negrita">PAGO:</span> {{ factura.metodo_pago|upper if factura.metodo_pago else 'EFECTIVO' }}</div>
+    {% if factura.estado_pago == 'pagada' %}<div class="pagado-badge">✓ PAGADO</div>{% endif %}
 
     <hr class="sep">
 
-    <div class="centro">
-        <div class="pequeno">¡GRACIAS POR SU COMPRA!</div>
-        <div class="pequeno">Vuelva Pronto</div>
-    </div>
+    <div class="gracias">¡GRACIAS POR SU COMPRA!</div>
+    <div class="gracias">Vuelva Pronto</div>
 
     <hr class="sep-doble">
     <div class="corte"></div>
