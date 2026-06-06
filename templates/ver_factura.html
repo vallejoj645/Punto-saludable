@@ -33,6 +33,9 @@
             <button onclick="window.print()" class="btn btn-success">
                 <i class="fas fa-print"></i> Imprimir
             </button>
+            <a href="{{ url_for('print_factura', factura_id=factura.id) }}" target="_blank" class="btn btn-outline-success">
+                <i class="fas fa-mobile-alt"></i> Móvil
+            </a>
             {% if current_user.rol == 'admin' %}
             <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEliminarFactura">
                 <i class="fas fa-trash"></i> Eliminar
