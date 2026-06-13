@@ -33,13 +33,17 @@
             <button onclick="window.print()" class="btn btn-success">
                 <i class="fas fa-print"></i> Imprimir
             </button>
-            <a href="{{ url_for('print_factura', factura_id=factura.id) }}" target="_blank" class="btn btn-outline-success">
+            <a href="/factura/{{ factura.id }}/print" target="_blank" class="btn btn-outline-success">
                 <i class="fas fa-mobile-alt"></i> Móvil
             </a>
             {% if current_user.rol == 'admin' %}
-            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalEliminarFactura">
-                <i class="fas fa-trash"></i> Eliminar
-            </button>
+            <form method="POST" action="{{ url_for('eliminar_factura', factura_id=factura.id) }}"
+                  onsubmit="return confirm('¿Eliminar la factura {{ factura.numero_consecutivo }} por ${{ "{:,.0f}".format(factura.total) }}? Esta acción es irreversible.');"
+                  style="display:inline;">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+            </form>
             {% endif %}
         </div>
     </div>
@@ -300,33 +304,6 @@
     <div class="corte"></div>
 </div>
 
-<!-- Modal Eliminar -->
-{% if current_user.rol == 'admin' %}
-<div class="modal fade" id="modalEliminarFactura" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p><strong>Factura:</strong> {{ factura.numero_consecutivo }}</p>
-                <p><strong>Total:</strong> <span class="text-success fw-bold">${{ "{:,.0f}".format(factura.total) }}</span></p>
-                <p><strong>Fecha:</strong> {{ factura.fecha_emision.strftime('%d/%m/%Y') }}</p>
-                <div class="alert alert-danger mb-0">
-                    <strong>Esta acción es irreversible.</strong> La factura se eliminará de los reportes de ingresos.
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <form method="POST" action="{{ url_for('eliminar_factura', factura_id=factura.id) }}" style="display:inline;">
-                    <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Eliminar</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 
 <style>
 @page {
