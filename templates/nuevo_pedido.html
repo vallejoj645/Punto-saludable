@@ -22,8 +22,13 @@
         .tab-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
         .tab-btn:hover:not(.active) { background: #f1f5f9; color: #334155; }
 
-        .categoria-section { background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 1.25rem; }
-        .categoria-header { font-size: 0.85rem; font-weight: 700; color: #667eea; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem; padding-bottom: 0.625rem; border-bottom: 1.5px solid #e2e8f0; }
+        .categoria-section { background: white; border-radius: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 1.25rem; overflow: hidden; }
+        .categoria-header { font-size: 0.85rem; font-weight: 700; color: #667eea; text-transform: uppercase; letter-spacing: 0.08em; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; border-bottom: 1.5px solid #e2e8f0; transition: background 0.15s; }
+        .categoria-header:hover { background: #f8fafc; }
+        .categoria-chevron { font-size: 0.8rem; color: #94a3b8; transition: transform 0.25s; }
+        .categoria-section.open .categoria-chevron { transform: rotate(180deg); }
+        .categoria-body { padding: 1.25rem; display: none; }
+        .categoria-section.open .categoria-body { display: block; }
 
         .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; }
         .item-card { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 0.75rem; padding: 1rem 0.875rem; cursor: pointer; transition: all 0.2s; text-align: center; position: relative; }
@@ -147,19 +152,24 @@
                     {% set _ = cats[item.categoria.nombre].append(item) %}
                 {% endfor %}
                 {% for cat_name, items in cats.items() %}
-                <div class="categoria-section">
-                    <div class="categoria-header">{{ cat_name }}</div>
-                    <div class="items-grid">
-                        {% for item in items %}
-                        <div class="item-card" id="card-{{ item.id }}">
-                            <span class="item-badge" id="badge-{{ item.id }}">0</span>
-                            <div class="item-emoji">🍽️</div>
-                            <div class="item-nombre">{{ item.nombre }}</div>
-                            {% if item.descripcion %}<div class="item-desc">{{ item.descripcion }}</div>{% endif %}
-                            <div class="item-precio">${{ "%.2f"|format(item.precio) }}</div>
-                            <button class="item-add" onclick="openModal('{{ item.id }}','{{ item.nombre|replace("'","\\'") }}',{{ item.precio }})">+ Agregar</button>
+                <div class="categoria-section open">
+                    <div class="categoria-header" onclick="toggleCategoria(this)">
+                        <span>{{ cat_name }} <span style="font-weight:400;color:#94a3b8;font-size:0.78rem;">({{ items|length }})</span></span>
+                        <span class="categoria-chevron">▼</span>
+                    </div>
+                    <div class="categoria-body">
+                        <div class="items-grid">
+                            {% for item in items %}
+                            <div class="item-card" id="card-{{ item.id }}">
+                                <span class="item-badge" id="badge-{{ item.id }}">0</span>
+                                <div class="item-emoji">🍽️</div>
+                                <div class="item-nombre">{{ item.nombre }}</div>
+                                {% if item.descripcion %}<div class="item-desc">{{ item.descripcion }}</div>{% endif %}
+                                <div class="item-precio">${{ "%.2f"|format(item.precio) }}</div>
+                                <button class="item-add" onclick="openModal('{{ item.id }}','{{ item.nombre|replace("'","\\'") }}',{{ item.precio }})">+ Agregar</button>
+                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                     </div>
                 </div>
                 {% endfor %}
@@ -277,6 +287,10 @@
 let cart = [];
 let modalItem = null;
 let modalCantidad = 1;
+
+function toggleCategoria(header) {
+    header.closest('.categoria-section').classList.toggle('open');
+}
 
 function switchTab(mode) {
     document.getElementById('menuView').classList.toggle('active', mode === 'menu');
