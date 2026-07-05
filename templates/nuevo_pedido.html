@@ -152,7 +152,7 @@
                     {% set _ = cats[item.categoria.nombre].append(item) %}
                 {% endfor %}
                 {% for cat_name, items in cats.items() %}
-                <div class="categoria-section open">
+                <div class="categoria-section">
                     <div class="categoria-header" onclick="toggleCategoria(this)">
                         <span>{{ cat_name }} <span style="font-weight:400;color:#94a3b8;font-size:0.78rem;">({{ items|length }})</span></span>
                         <span class="categoria-chevron">▼</span>
