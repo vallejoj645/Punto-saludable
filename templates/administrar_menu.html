@@ -379,16 +379,14 @@
 
                             <div class="item-actions">
                                 <!-- Editar (abre modal) -->
-                                <button class="btn btn-info btn-sm"
-                                        onclick="abrirEditar(
-                                            {{ item.id }},
-                                            {{ item.nombre | tojson }},
-                                            {{ (item.descripcion or '') | tojson }},
-                                            {{ item.precio }},
-                                            {{ item.categoria_id }},
-                                            {{ (item.imagen_url or '') | tojson }},
-                                            {{ item.orden }}
-                                        )">
+                                <button type="button" class="btn btn-info btn-sm btn-editar"
+                                        data-id="{{ item.id }}"
+                                        data-nombre="{{ item.nombre | e }}"
+                                        data-descripcion="{{ (item.descripcion or '') | e }}"
+                                        data-precio="{{ item.precio }}"
+                                        data-categoria="{{ item.categoria_id }}"
+                                        data-imagen="{{ (item.imagen_url or '') | e }}"
+                                        data-orden="{{ item.orden }}">
                                     ✏️ Editar
                                 </button>
 
@@ -556,21 +554,17 @@
         // MODAL EDITAR
         // ══════════════════════════════════════════
         function abrirEditar(id, nombre, descripcion, precio, categoriaId, imagenUrl, orden) {
-            document.getElementById('edit-nombre').value       = nombre;
-            document.getElementById('edit-descripcion').value  = descripcion;
-            document.getElementById('edit-precio').value       = precio;
-            document.getElementById('edit-categoria').value    = categoriaId;
-            document.getElementById('edit-imagen_url').value   = imagenUrl;
-            document.getElementById('edit-orden').value        = orden;
+            document.getElementById('edit-nombre').value      = nombre;
+            document.getElementById('edit-descripcion').value = descripcion;
+            document.getElementById('edit-precio').value      = precio;
+            document.getElementById('edit-categoria').value   = categoriaId;
+            document.getElementById('edit-imagen_url').value  = imagenUrl;
+            document.getElementById('edit-orden').value       = orden;
+            document.getElementById('form-editar').action     = '/editar_item/' + id;
 
-            // Apuntar el form a la ruta de edición del item
-            document.getElementById('form-editar').action = `/editar_item/${id}`;
-
-            // Restablecer vista previa
-            const wrap = document.getElementById('preview-editar');
+            const wrap  = document.getElementById('preview-editar');
             const imgEl = document.getElementById('img-preview-editar');
             imgEl.dataset.retried = '';
-
             if (imagenUrl) {
                 previewImagen(imagenUrl, 'preview-editar');
             } else {
@@ -585,6 +579,22 @@
             document.getElementById('modal-editar').classList.remove('show');
             document.body.style.overflow = '';
         }
+
+        // Abrir modal desde botones data-* (evita problemas con caracteres especiales en onclick inline)
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-editar');
+            if (btn) {
+                abrirEditar(
+                    btn.dataset.id,
+                    btn.dataset.nombre,
+                    btn.dataset.descripcion,
+                    btn.dataset.precio,
+                    btn.dataset.categoria,
+                    btn.dataset.imagen,
+                    btn.dataset.orden
+                );
+            }
+        });
 
         // Cerrar modal al hacer clic fuera
         document.getElementById('modal-editar').addEventListener('click', function(e) {
