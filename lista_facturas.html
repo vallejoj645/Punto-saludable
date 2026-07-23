@@ -48,7 +48,7 @@
                         <option value="">Todos los turnos</option>
                         {% for turno in turnos_disponibles %}
                         <option value="{{ turno.id }}"
-                            {% if request.args.get('turno_id', type=int) == turno.id %}selected{% endif %}>
+                            {% if request.args.get('turno_id')|int == turno.id %}selected{% endif %}>
                             Turno {{ turno.nombre }} — {{ turno.fecha_apertura.strftime('%d/%m/%Y') }}
                             {% if turno.activo %}(activo){% endif %}
                         </option>
