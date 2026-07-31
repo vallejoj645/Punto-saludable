@@ -196,6 +196,39 @@
             font-size: 0.9rem;
             color: #2c3e50;
         }
+
+        /* ── Calculadora de cambio ── */
+        .cambio-box {
+            display: none;
+            background: #f0fdf4;
+            border: 2px solid #27ae60;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 15px;
+        }
+        .cambio-box.visible { display: block; }
+        .cambio-box h3 { color: #1e7e34; margin-bottom: 12px; font-size: 1rem; }
+        .cambio-input-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
+        .cambio-input-row input {
+            flex: 1; padding: 10px; border: 2px solid #27ae60;
+            border-radius: 5px; font-size: 1.1rem; font-weight: 700;
+        }
+        .cambio-input-row input:focus { outline: none; border-color: #1e7e34; }
+        .billetes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .billete {
+            padding: 6px 12px; background: #d4edda; border: 1px solid #27ae60;
+            border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+            color: #1e7e34; cursor: pointer; transition: all 0.2s;
+        }
+        .billete:hover { background: #27ae60; color: white; }
+        .cambio-resultado {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; border-radius: 6px;
+            background: #27ae60; color: white;
+            font-size: 1.25rem; font-weight: 800;
+        }
+        .cambio-resultado.negativo { background: #e74c3c; }
+        .cambio-resultado.exacto  { background: #2980b9; }
         
         .required {
             color: #e74c3c;
@@ -390,6 +423,29 @@
                         <input type="number" name="transferencia" step="0.01" min="0" value="0" placeholder="0.00">
                     </div>
                 </div>
+
+                <!-- Calculadora de cambio (solo efectivo) -->
+                <div class="cambio-box" id="cambio-box">
+                    <h3>🪙 Calcular cambio</h3>
+                    <div class="cambio-input-row">
+                        <input type="number" id="pago-recibido" placeholder="¿Cuánto entrega el cliente?"
+                               min="0" oninput="calcularCambio()">
+                    </div>
+                    <div class="billetes" id="billetes">
+                        <span class="billete" onclick="setBillete(1000)">$1.000</span>
+                        <span class="billete" onclick="setBillete(2000)">$2.000</span>
+                        <span class="billete" onclick="setBillete(5000)">$5.000</span>
+                        <span class="billete" onclick="setBillete(10000)">$10.000</span>
+                        <span class="billete" onclick="setBillete(20000)">$20.000</span>
+                        <span class="billete" onclick="setBillete(50000)">$50.000</span>
+                        <span class="billete" onclick="setBillete(100000)">$100.000</span>
+                        <span class="billete" onclick="setBillete(200000)">$200.000</span>
+                    </div>
+                    <div class="cambio-resultado" id="cambio-resultado">
+                        <span>Cambio:</span>
+                        <span id="cambio-valor">—</span>
+                    </div>
+                </div>
                 
                 <div class="form-group">
                     <label>💵 Propina (Opcional)</label>
@@ -470,31 +526,74 @@
     
     <script>
         const subtotalBase = {{ subtotal }};
-        
+
+        function totalActual() {
+            const propina = parseFloat(document.getElementById('propina').value) || 0;
+            return subtotalBase + propina;
+        }
+
         // Calcular total con propina
         function calcularTotal() {
             const propina = parseFloat(document.getElementById('propina').value) || 0;
             const total = subtotalBase + propina;
-            
+
             document.getElementById('total-final').textContent = '$' + total.toLocaleString('es-CO', {maximumFractionDigits: 0});
             document.getElementById('propina-valor').textContent = '$' + propina.toLocaleString('es-CO', {maximumFractionDigits: 0});
-            
+
             if (propina > 0) {
                 document.getElementById('propina-display').style.display = 'flex';
             } else {
                 document.getElementById('propina-display').style.display = 'none';
             }
+
+            calcularCambio();
         }
-        
-        // Mostrar/ocultar desglose de pago mixto
+
+        // ── Calculadora de cambio ──
+        function calcularCambio() {
+            const pago = parseFloat(document.getElementById('pago-recibido').value) || 0;
+            const total = totalActual();
+            const cambio = pago - total;
+            const el = document.getElementById('cambio-resultado');
+            const valorEl = document.getElementById('cambio-valor');
+
+            if (!pago) {
+                valorEl.textContent = '—';
+                el.className = 'cambio-resultado';
+                return;
+            }
+            if (cambio < 0) {
+                valorEl.textContent = '-$' + Math.abs(cambio).toLocaleString('es-CO', {maximumFractionDigits: 0}) + ' (falta)';
+                el.className = 'cambio-resultado negativo';
+            } else if (cambio === 0) {
+                valorEl.textContent = 'Exacto ✓';
+                el.className = 'cambio-resultado exacto';
+            } else {
+                valorEl.textContent = '$' + cambio.toLocaleString('es-CO', {maximumFractionDigits: 0});
+                el.className = 'cambio-resultado';
+            }
+        }
+
+        function setBillete(valor) {
+            document.getElementById('pago-recibido').value = valor;
+            calcularCambio();
+        }
+
+        // Mostrar/ocultar desglose de pago mixto y calculadora de cambio
         function toggleDesglose() {
             const metodoPago = document.querySelector('input[name="metodo_pago"]:checked').value;
             const desglose = document.getElementById('desglose-mixto');
-            
+            const cambioBox = document.getElementById('cambio-box');
+
             if (metodoPago === 'mixto') {
                 desglose.classList.add('active');
+                cambioBox.classList.remove('visible');
+            } else if (metodoPago === 'efectivo') {
+                desglose.classList.remove('active');
+                cambioBox.classList.add('visible');
             } else {
                 desglose.classList.remove('active');
+                cambioBox.classList.remove('visible');
             }
         }
         
@@ -570,10 +669,9 @@
             }
         });
         
-        // Auto-focus en el primer campo al cargar
         document.addEventListener('DOMContentLoaded', function() {
-            // Calcular total inicial
             calcularTotal();
+            toggleDesglose();
         });
     </script>
 </body>
