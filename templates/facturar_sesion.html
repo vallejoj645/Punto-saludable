@@ -440,6 +440,7 @@
                         <span class="billete" onclick="setBillete(50000)">$50.000</span>
                         <span class="billete" onclick="setBillete(100000)">$100.000</span>
                         <span class="billete" onclick="setBillete(200000)">$200.000</span>
+                        <span class="billete" onclick="limpiarPago()" style="background:#fee2e2;border-color:#ef4444;color:#b91c1c;">✕ Limpiar</span>
                     </div>
                     <div class="cambio-resultado" id="cambio-resultado">
                         <span>Cambio:</span>
@@ -575,7 +576,13 @@
         }
 
         function setBillete(valor) {
-            document.getElementById('pago-recibido').value = valor;
+            const input = document.getElementById('pago-recibido');
+            input.value = (parseFloat(input.value) || 0) + valor;
+            calcularCambio();
+        }
+
+        function limpiarPago() {
+            document.getElementById('pago-recibido').value = '';
             calcularCambio();
         }
 
