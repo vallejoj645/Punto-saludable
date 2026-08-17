@@ -312,6 +312,31 @@
         .empty-board h2 { font-size: 1.25rem; color: var(--text); }
         .empty-board p  { font-size: .9rem; color: var(--text3); }
 
+        /* ── INDICADOR SONIDO ────────────────────── */
+        .sound-pill {
+            display: inline-flex; align-items: center; gap: .4rem;
+            padding: .28rem .75rem;
+            border-radius: 20px; font-size: .75rem; color: var(--text3);
+            background: var(--surface2); border: 1px solid var(--border);
+            cursor: default;
+        }
+        .sound-pill.activo { color: var(--green); border-color: var(--green); background: var(--green-bg); }
+        .sound-pill .dot-sound {
+            width: 7px; height: 7px; border-radius: 50%; background: var(--text3);
+        }
+        .sound-pill.activo .dot-sound { background: var(--green); }
+
+        /* ── FLASH PANTALLA ──────────────────────── */
+        .screen-flash {
+            position: fixed; inset: 0;
+            background: rgba(34,197,94,.18);
+            pointer-events: none;
+            z-index: 2999;
+            opacity: 0;
+            transition: opacity .05s;
+        }
+        .screen-flash.active { opacity: 1; transition: opacity .05s; }
+
         /* ── TOAST ───────────────────────────────── */
         .toast {
             position: fixed; top: 64px; right: 1.25rem;
@@ -364,9 +389,10 @@
         </div>
 
         <div class="topbar-right">
-            <button onclick="playAlertSound(); showToast('🔊 Sonido activo', 'ok')" class="btn-nav">
-                <i data-lucide="volume-2"></i> Sonido
-            </button>
+            <span class="sound-pill" id="sound-pill">
+                <span class="dot-sound"></span>
+                <span id="sound-label">Toca para activar sonido</span>
+            </span>
             <span class="refresh-pill" id="refresh-status">
                 Actualiza cada <span id="countdown">3</span>s
                 <span class="dot-live"></span>
@@ -456,6 +482,9 @@
 {% endif %}
 </div>
 
+<!-- FLASH PANTALLA -->
+<div class="screen-flash" id="screen-flash"></div>
+
 <!-- TOAST -->
 <div class="toast" id="toast">
     <span class="toast-icon"><i data-lucide="bell"></i></span>
@@ -469,41 +498,72 @@
     let knownIds = new Set();
     document.querySelectorAll('[data-id]').forEach(el => knownIds.add(el.dataset.id));
 
-    let hasInteracted = false;
+    let audioCtx = null;
+    let soundActivo = false;
     let lastSound = 0;
     let countdown = 3;
     let isChecking = false;
+    const PAGE_LOAD_MS = Date.now();
 
-    /* ── Sonido ── */
-    function createAlertSound() {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        return function () {
-            if (!hasInteracted) return;
-            const now = Date.now();
-            if (now - lastSound < 5000) return;
-            lastSound = now;
-            for (let i = 0; i < 3; i++) {
-                setTimeout(() => {
-                    const o = ctx.createOscillator(), g = ctx.createGain();
-                    o.connect(g); g.connect(ctx.destination);
-                    o.type = 'square';
-                    o.frequency.setValueAtTime(880, ctx.currentTime);
-                    o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + .25);
-                    g.gain.setValueAtTime(.55, ctx.currentTime);
-                    g.gain.exponentialRampToValueAtTime(.01, ctx.currentTime + .28);
-                    o.start(ctx.currentTime); o.stop(ctx.currentTime + .3);
-                }, i * 380);
-            }
-            if (navigator.vibrate) navigator.vibrate([200,80,200,80,400]);
-        };
+    /* ── Activar sonido en el primer gesto del usuario ── */
+    function activarSonido() {
+        if (soundActivo) return;
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        } catch(e) { return; }
+        soundActivo = true;
+        const pill = document.getElementById('sound-pill');
+        const label = document.getElementById('sound-label');
+        if (pill) pill.classList.add('activo');
+        if (label) label.textContent = '🔊 Sonido activo';
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
     }
-    const playAlertSound = createAlertSound();
 
-    document.addEventListener('click', () => { hasInteracted = true; }, { once: true });
-    document.addEventListener('keydown', () => { hasInteracted = true; }, { once: true });
-    setTimeout(() => {
-        if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-    }, 2000);
+    /* Activar automáticamente con cualquier toque o clic en la página */
+    document.addEventListener('click',      activarSonido, { once: false });
+    document.addEventListener('touchstart', activarSonido, { once: false, passive: true });
+    document.addEventListener('keydown',    activarSonido, { once: false });
+
+    /* ── Beep de alerta ── */
+    function playAlertSound() {
+        if (!soundActivo || !audioCtx) return;
+        const now = Date.now();
+        if (now - lastSound < 3000) return;
+        lastSound = now;
+
+        const beep = (delayMs, freq1, freq2) => {
+            setTimeout(() => {
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination);
+                o.type = 'square';
+                o.frequency.setValueAtTime(freq1, audioCtx.currentTime);
+                o.frequency.exponentialRampToValueAtTime(freq2, audioCtx.currentTime + .18);
+                g.gain.setValueAtTime(.7, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + .22);
+                o.start(audioCtx.currentTime);
+                o.stop(audioCtx.currentTime + .25);
+            }, delayMs);
+        };
+
+        beep(0,   660, 1320);
+        beep(300, 660, 1320);
+        beep(600, 880, 1760);
+
+        if (navigator.vibrate) navigator.vibrate([200,80,200,80,400]);
+    }
+
+    /* ── Flash de pantalla ── */
+    function flashPantalla() {
+        const f = document.getElementById('screen-flash');
+        f.classList.add('active');
+        setTimeout(() => f.classList.remove('active'), 600);
+        setTimeout(() => { f.classList.add('active'); setTimeout(() => f.classList.remove('active'), 600); }, 800);
+        setTimeout(() => { f.classList.add('active'); setTimeout(() => f.classList.remove('active'), 600); }, 1600);
+    }
 
     /* ── Toast ── */
     function showToast(msg, type = 'info') {
@@ -513,20 +573,14 @@
         setTimeout(() => el.classList.remove('show'), 4500);
     }
 
-    /* ── Tiempo de carga de página (para calcular transcurrido sin timestamps) ── */
-    const PAGE_LOAD_MS = Date.now();
-
     /* ── Tiempos transcurridos ── */
     function updateElapsed() {
-        // Minutos transcurridos desde que cargó la página
         const minsSinceLoad = (Date.now() - PAGE_LOAD_MS) / 60000;
         document.querySelectorAll('.ticket-time[data-minutos]').forEach(el => {
-            // minutos iniciales calculados por el servidor (sin bug de zona horaria)
             const initialMins = parseInt(el.dataset.minutos, 10);
             const mins = Math.round(initialMins + minsSinceLoad);
             el.querySelector('.elapsed').textContent = mins + ' min';
             el.className = 'ticket-time' + (mins > 15 ? ' fire' : mins > 8 ? ' warn' : '');
-            // actualizar urgencia del ticket padre
             const ticket = el.closest('.ticket');
             if (ticket) {
                 ticket.classList.remove('urgency-ok','urgency-warm','urgency-hot','urgency-fire');
@@ -551,12 +605,13 @@
             });
             if (newOnes.length) {
                 playAlertSound();
+                flashPantalla();
                 const msg = newOnes.length === 1
                     ? `${newOnes[0].mesa}: ${newOnes[0].cantidad}× ${newOnes[0].producto}`
                     : `${newOnes.length} nuevos pedidos en cocina`;
                 showToast('🔔 ' + msg, 'warning');
                 if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification('Nuevo pedido', { body: msg, tag: 'cocina' });
+                    new Notification('🔔 Nuevo pedido', { body: msg, tag: 'cocina' });
                 }
                 setTimeout(updatePage, 400);
             } else {
@@ -604,17 +659,13 @@
 
     setInterval(checkNew, 3000);
     setInterval(tick, 1000);
-    setInterval(updateElapsed, 60000); // cada minuto es suficiente
+    setInterval(updateElapsed, 60000);
     updateElapsed();
     setTimeout(checkNew, 1500);
 
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) { checkNew(); updatePage(); }
     });
-
-    setTimeout(() => {
-        if (!hasInteracted) showToast('Haz click para activar el sonido', 'info');
-    }, 3500);
 </script>
 </body>
 </html>
