@@ -42,6 +42,70 @@
         .item-add { display: block; background: #667eea; color: white; border: none; border-radius: 0.5rem; padding: 0.375rem 0; width: 100%; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
         .item-add:hover { background: #5568d3; }
 
+        /* ── Buscador ── */
+        .search-wrap {
+            position: relative;
+            margin-bottom: 1.25rem;
+        }
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 0.875rem;
+            font-size: 0.95rem;
+            font-family: inherit;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: border-color 0.2s;
+        }
+        .search-input:focus { outline: none; border-color: #667eea; }
+        .search-icon {
+            position: absolute;
+            left: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.1rem;
+            pointer-events: none;
+            color: #94a3b8;
+        }
+        .search-clear {
+            position: absolute;
+            right: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            color: #94a3b8;
+            cursor: pointer;
+            display: none;
+            line-height: 1;
+        }
+        .search-clear.show { display: block; }
+        .search-results {
+            display: none;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+        .search-results.show { display: block; }
+        .search-results-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.875rem;
+        }
+        .search-empty {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
         .menu-view { display: none; }
         .menu-view.active { display: block; }
         .manual-view { display: none; }
@@ -145,14 +209,35 @@
 
         <!-- Vista Menú -->
         <div class="menu-view active" id="menuView">
+
+            <!-- BUSCADOR -->
+            <div class="search-wrap" id="searchWrap" style="display:none;">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="searchInput"
+                       placeholder="Buscar producto…"
+                       oninput="onSearch(this.value)"
+                       autocomplete="off">
+                <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+            </div>
+
+            <!-- RESULTADOS DE BÚSQUEDA -->
+            <div class="search-results" id="searchResults">
+                <div class="search-results-title" id="searchResultsTitle"></div>
+                <div class="items-grid" id="searchGrid"></div>
+                <div class="search-empty" id="searchEmpty" style="display:none;">
+                    😕 Sin resultados para "<span id="searchEmptyQ"></span>"
+                </div>
+            </div>
+
             {% if items_menu %}
+                <script>document.getElementById('searchWrap').style.display='block';</script>
                 {% set cats = {} %}
                 {% for item in items_menu %}
                     {% if item.categoria.nombre not in cats %}{% set _ = cats.update({item.categoria.nombre: []}) %}{% endif %}
                     {% set _ = cats[item.categoria.nombre].append(item) %}
                 {% endfor %}
                 {% for cat_name, items in cats.items() %}
-                <div class="categoria-section">
+                <div class="categoria-section" data-cat="{{ cat_name | lower }}">
                     <div class="categoria-header" onclick="toggleCategoria(this)">
                         <span>{{ cat_name }} <span style="font-weight:400;color:#94a3b8;font-size:0.78rem;">({{ items|length }})</span></span>
                         <span class="categoria-chevron">▼</span>
@@ -160,7 +245,10 @@
                     <div class="categoria-body">
                         <div class="items-grid">
                             {% for item in items %}
-                            <div class="item-card" id="card-{{ item.id }}">
+                            <div class="item-card" id="card-{{ item.id }}"
+                                 data-nombre="{{ item.nombre | lower }}"
+                                 data-desc="{{ (item.descripcion or '') | lower }}"
+                                 data-cat="{{ cat_name | lower }}">
                                 <span class="item-badge" id="badge-{{ item.id }}">0</span>
                                 <div class="item-emoji">🍽️</div>
                                 <div class="item-nombre">{{ item.nombre }}</div>
@@ -290,6 +378,56 @@ let modalCantidad = 1;
 
 function toggleCategoria(header) {
     header.closest('.categoria-section').classList.toggle('open');
+}
+
+/* ── Buscador ── */
+function onSearch(q) {
+    const clear = document.getElementById('searchClear');
+    const results = document.getElementById('searchResults');
+    const grid = document.getElementById('searchGrid');
+    const empty = document.getElementById('searchEmpty');
+    const title = document.getElementById('searchResultsTitle');
+    const cats = document.querySelectorAll('.categoria-section');
+
+    clear.classList.toggle('show', q.length > 0);
+
+    if (!q.trim()) {
+        results.classList.remove('show');
+        cats.forEach(c => c.style.display = '');
+        return;
+    }
+
+    const term = q.toLowerCase().trim();
+    const allCards = document.querySelectorAll('.item-card[data-nombre]');
+    const matches = [];
+    allCards.forEach(card => {
+        const nombre = card.dataset.nombre || '';
+        const desc   = card.dataset.desc   || '';
+        const cat    = card.dataset.cat    || '';
+        if (nombre.includes(term) || desc.includes(term) || cat.includes(term)) {
+            matches.push(card.cloneNode(true));
+        }
+    });
+
+    cats.forEach(c => c.style.display = 'none');
+    results.classList.add('show');
+
+    if (matches.length === 0) {
+        grid.innerHTML = '';
+        empty.style.display = 'block';
+        document.getElementById('searchEmptyQ').textContent = q;
+        title.textContent = '';
+    } else {
+        empty.style.display = 'none';
+        title.textContent = matches.length + ' resultado' + (matches.length !== 1 ? 's' : '');
+        grid.innerHTML = '';
+        matches.forEach(card => grid.appendChild(card));
+    }
+}
+
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    onSearch('');
 }
 
 function switchTab(mode) {
